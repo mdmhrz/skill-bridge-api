@@ -6,13 +6,13 @@ import nodemailer from 'nodemailer'
 
 // Node mailer transporter
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.APP_USER,
-    pass: process.env.APP_PASS,
-  }
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.APP_USER,
+        pass: process.env.APP_PASS,
+    }
 });
 
 
@@ -44,22 +44,22 @@ export const auth = betterAuth({
         requireEmailVerification: true
     },
 
-     emailVerification: {
-    sendOnSignUp: true,
-    autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url, token }, request) => {
-        // const APP_URL = process.env.APP_URL
-        // console.log(APP_URL)
-    //   const verificationURL = `${APP_URL}/verify-email?token=${token}`
-      const verificationURL = url
+    emailVerification: {
+        sendOnSignUp: true,
+        autoSignInAfterVerification: true,
+        sendVerificationEmail: async ({ user, url, token }, request) => {
+            // const APP_URL = process.env.APP_URL
+            // console.log(APP_URL)
+            //   const verificationURL = `${APP_URL}/verify-email?token=${token}`
+            const verificationURL = url
 
-      try {
-        const info = await transporter.sendMail({
-          from: '"Skill Bridge" <skill_bridge@gmail.com>',
-          to: user.email,
-          subject: "Email Verification",
-          text: "Hello world?", // Plain-text version of the message
-          html: `
+            try {
+                const info = await transporter.sendMail({
+                    from: '"Skill Bridge" <skill_bridge@gmail.com>',
+                    to: user.email,
+                    subject: "Email Verification",
+                    text: "Hello world?", // Plain-text version of the message
+                    html: `
                 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -198,15 +198,28 @@ export const auth = betterAuth({
 </html>
 
                 `, // HTML version of the message
-        });
+                });
 
 
-        console.log('***** verification email send!');
-      } catch (err) {
-        console.log('verify email send fail');
-        throw err
-      }
-    },
-  }
+                console.log('***** verification email send!');
+            } catch (err) {
+                console.log('verify email send fail');
+                throw err
+            }
+        },
+
+        // Social Login Implementation
+        socialProviders: {
+            google: {
+                prompt: 'select_account consent',
+                accessType: 'offline',
+                clientId: process.env.GOOGLE_CLIENT_ID as string,
+                clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+            },
+        },
+
+
+
+    }
 
 });
