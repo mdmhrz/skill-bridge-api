@@ -4,6 +4,7 @@ import notFound from './middleware/notFound';
 import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth';
 import { tutorRoutes } from './module/tutors/tutor.route';
+import { categoryRoutes } from './module/categories/category.routes';
 
 
 
@@ -21,7 +22,10 @@ app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
 
 // Totor Routes
-app.use('/api/tutor', tutorRoutes)
+app.use('/api/tutor', tutorRoutes);
+
+// Category routes
+app.use('/api/categories', categoryRoutes)
 
 
 // app.use(express.urlencoded({ extended: true }));
