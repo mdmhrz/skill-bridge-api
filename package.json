@@ -1,5 +1,5 @@
 {
-    "name": "prisma-blog-app",
+    "name": "sill-bridge-api",
     "version": "1.0.0",
     "description": "",
     "main": "dist/server.js",
