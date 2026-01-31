@@ -6,10 +6,10 @@ async function main() {
   const category = await prisma.category.create({
     data: {
       name: 'Programming',
-      slug: 'programming',      
-    },    
+      slug: 'programming',
+    },
   })
-  console.log('Created category:', category)
+  // console.log('Created category:', category)
 
   // Fetch all users with their posts
   const allCategories = await prisma.category.findMany()
