@@ -1,10 +1,11 @@
 import express, { Router } from "express";
 import { tutorController } from "./tutor.controller";
 import auth from "../../middleware/auth";
+import { UserRole } from "../../enums/user.role.enum";
 
 const router = express.Router();
 
-router.post('/', auth(), tutorController.createTutorProfile);
+router.post('/', auth(UserRole.TUTOR), tutorController.createTutorProfile);
 router.get("/", tutorController.getAllTutor);
 router.get("/:id", tutorController.getTutorById);
 
