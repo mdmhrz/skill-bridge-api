@@ -1,0 +1,63 @@
+enum BookingStatus {
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+
+
+
+model Availability {
+  id             String    @id @default(uuid())
+  tutorProfileId String
+  dayOfWeek      DayOfWeek
+  startTime      String // Format: "HH:mm" (e.g., "09:00")
+  endTime        String // Format: "HH:mm" (e.g., "17:00")
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+
+  @@map("availability")
+}
+
+model Booking {
+  id             String        @id @default(uuid())
+  studentId      String
+  tutorProfileId String
+  categoryId     String? // Optional: which subject/category is this booking for
+  scheduledDate  DateTime // Date and time of the session
+  duration       Int // Duration in minutes (e.g., 60, 90, 120)
+  totalPrice     Decimal       @db.Decimal(10, 2)
+  status         BookingStatus @default(CONFIRMED)
+  notes          String?       @db.Text // Student's notes or requirements
+  meetingLink    String? // Video call link (if applicable)
+  cancellationReason String?   @db.Text
+  cancelledAt    DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  student      User         @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  review       Review?
+
+  @@index([studentId])
+  @@index([tutorProfileId])
+  @@index([scheduledDate])
+  @@index([status])
+  @@map("bookings")
+}

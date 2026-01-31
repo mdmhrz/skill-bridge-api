@@ -1,0 +1,40 @@
+model TutorProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  bio         String?  @db.Text
+  title       String? // e.g., "Mathematics Expert", "Python Developer"
+  experience  Int? // years of experience
+  hourlyRate  Decimal  @db.Decimal(10, 2)
+  rating      Decimal? @default(0) @db.Decimal(3, 2) // Average rating (0-5)
+  totalReviews Int     @default(0)
+  isVerified  Boolean  @default(false)
+  languages   String[] // Array of languages spoken
+  education   String?  @db.Text // Educational background
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categories    TutorCategory[]
+  availability  Availability[]
+  bookings      Booking[]
+  reviews       Review[]
+
+  @@map("tutor_profiles")
+}
+
+
+// Junction table for many-to-many relationship between Tutors and Categories
+model TutorCategory {
+  id             String   @id @default(uuid())
+  tutorProfileId String
+  categoryId     String
+  createdAt      DateTime @default(now())
+
+  // Relations
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  category     Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorProfileId, categoryId])
+  @@map("tutor_categories")
+}
