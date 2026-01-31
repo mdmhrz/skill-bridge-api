@@ -13,8 +13,8 @@ datasource db {
   provider = "postgresql"
 }
 
-
 // Enums
+
 enum Role {
   STUDENT
   TUTOR
@@ -27,52 +27,31 @@ enum UserStatus {
   INACTIVE
 }
 
-enum BookingStatus {
-  CONFIRMED
-  COMPLETED
-  CANCELLED
-}
-
-enum DayOfWeek {
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-  SUNDAY
-}
-
-
 // User Model
-model User {
-  id            String    @id @default(uuid())
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  avatar        String?
-  phone String?
 
-  role          Role      @default(STUDENT)
+model User {
+  id            String     @id @default(uuid())
+  name          String
+  email         String     @unique
+  image         String?
+  emailVerified Boolean    @default(false)
+  phone         String?
+  isBanned      Boolean    @default(false)
+  bannedReason  String?
+  role          Role       @default(STUDENT)
   status        UserStatus @default(ACTIVE)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   sessions      Session[]
   accounts      Account[]
-
 
   // Relations
   tutorProfile    TutorProfile?
   studentBookings Booking[]     @relation("StudentBookings")
-  // tutorBookings   Booking[]     @relation("TutorBookings")
   reviews         Review[]
 
- 
   @@map("user")
 }
-
-
-
 
 model Session {
   id        String   @id
@@ -122,67 +101,20 @@ model Verification {
   @@map("verification")
 }
 
-
-
-model Category {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  slug        String   @unique
-  description String?  @db.Text
-  icon        String? // Icon name or URL
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  tutors TutorCategory[]
-
-  @@map("categories")
+enum BookingStatus {
+  CONFIRMED
+  COMPLETED
+  CANCELLED
 }
 
-
-
-model TutorProfile {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  bio         String?  @db.Text
-  title       String? // e.g., "Mathematics Expert", "Python Developer"
-  experience  Int? // years of experience
-  hourlyRate  Decimal  @db.Decimal(10, 2)
-  rating      Decimal? @default(0) @db.Decimal(3, 2) // Average rating (0-5)
-  totalReviews Int     @default(0)
-  isVerified  Boolean  @default(false)
-  languages   String[] // Array of languages spoken
-  education   String?  @db.Text // Educational background
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  categories    TutorCategory[]
-  availability  Availability[]
-  bookings      Booking[]
-  reviews       Review[]
-
-  @@map("tutor_profiles")
-}
-
-
-
-
-// Junction table for many-to-many relationship between Tutors and Categories
-model TutorCategory {
-  id             String   @id @default(uuid())
-  tutorProfileId String
-  categoryId     String
-  createdAt      DateTime @default(now())
-
-  // Relations
-  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
-  category     Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@unique([tutorProfileId, categoryId])
-  @@map("tutor_categories")
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
 }
 
 model Availability {
@@ -202,21 +134,21 @@ model Availability {
 }
 
 model Booking {
-  id             String        @id @default(uuid())
-  studentId      String
-  tutorProfileId String
-  categoryId     String? // Optional: which subject/category is this booking for
-  scheduledDate  DateTime // Date and time of the session
-  duration       Int // Duration in minutes (e.g., 60, 90, 120)
-  totalPrice     Decimal       @db.Decimal(10, 2)
-  status         BookingStatus @default(CONFIRMED)
-  notes          String?       @db.Text // Student's notes or requirements
-  meetingLink    String? // Video call link (if applicable)
-  cancellationReason String?   @db.Text
-  cancelledAt    DateTime?
-  completedAt    DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                 String        @id @default(uuid())
+  studentId          String
+  tutorProfileId     String
+  categoryId         String? // Optional: which subject/category is this booking for
+  scheduledDate      DateTime // Date and time of the session
+  duration           Int // Duration in minutes (e.g., 60, 90, 120)
+  totalPrice         Decimal       @db.Decimal(10, 2)
+  status             BookingStatus @default(CONFIRMED)
+  notes              String?       @db.Text // Student's notes or requirements
+  meetingLink        String? // Video call link (if applicable)
+  cancellationReason String?       @db.Text
+  cancelledAt        DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
   // Relations
   student      User         @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
@@ -228,6 +160,22 @@ model Booking {
   @@index([scheduledDate])
   @@index([status])
   @@map("bookings")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @db.Text
+  icon        String? // Icon name or URL
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tutors TutorCategory[]
+
+  @@map("categories")
 }
 
 model Review {
@@ -251,5 +199,43 @@ model Review {
   @@map("reviews")
 }
 
+model TutorProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  bio          String?  @db.Text
+  title        String? // e.g., "Mathematics Expert", "Python Developer"
+  experience   Int? // years of experience
+  hourlyRate   Decimal  @db.Decimal(10, 2)
+  rating       Decimal? @default(0) @db.Decimal(3, 2) // Average rating (0-5)
+  totalReviews Int      @default(0)
+  isVerified   Boolean  @default(false)
+  languages    String[] // Array of languages spoken
+  education    String?  @db.Text // Educational background
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
+  // Relations
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categories   TutorCategory[]
+  availability Availability[]
+  bookings     Booking[]
+  reviews      Review[]
 
+  @@map("tutor_profiles")
+}
+
+// Junction table for many-to-many relationship between Tutors and Categories
+
+model TutorCategory {
+  id             String   @id @default(uuid())
+  tutorProfileId String
+  categoryId     String
+  createdAt      DateTime @default(now())
+
+  // Relations
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  category     Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorProfileId, categoryId])
+  @@map("tutor_categories")
+}
