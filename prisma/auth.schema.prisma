@@ -20,7 +20,7 @@ model User {
   email         String    @unique
   emailVerified Boolean   @default(false)
   avatar        String?
-  phone String?
+  phone         String?
 
   role          Role      @default(STUDENT)
   status        UserStatus @default(ACTIVE)
@@ -33,7 +33,6 @@ model User {
   // Relations
   tutorProfile    TutorProfile?
   studentBookings Booking[]     @relation("StudentBookings")
-  // tutorBookings   Booking[]     @relation("TutorBookings")
   reviews         Review[]
 
  

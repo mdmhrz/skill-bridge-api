@@ -1,6 +1,8 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors'
 import notFound from './middleware/notFound';
+import { toNodeHandler } from 'better-auth/node';
+import { auth } from './lib/auth';
 
 
 
@@ -12,10 +14,15 @@ app.use(cors({
 
 }))
 
+// this route is for better auth
+app.all("/api/auth/*splat", toNodeHandler(auth));
 
 
 app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
+
+
+
 
 
 // root route
