@@ -3,6 +3,7 @@ import cors from 'cors'
 import notFound from './middleware/notFound';
 import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth';
+import { tutorRoutes } from './module/tutors/tutor.route';
 
 
 
@@ -16,6 +17,10 @@ app.use(cors({
 
 // this route is for better auth
 app.all("/api/auth/*splat", toNodeHandler(auth));
+
+
+// Totor Routes
+app.use('/api/tutor', tutorRoutes)
 
 
 app.use(express.json());
