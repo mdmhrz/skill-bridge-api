@@ -5,6 +5,8 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth';
 import { tutorRoutes } from './module/tutors/tutor.route';
 import { categoryRoutes } from './module/categories/category.routes';
+import { currentUserRoutes } from './module/auth/currentUserRoutes';
+
 
 
 
@@ -20,6 +22,9 @@ app.use(cors({
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
 app.use(express.json());
+
+// get current user
+app.use('/current-user', currentUserRoutes);
 
 // Totor Routes
 app.use('/api/tutor', tutorRoutes);
