@@ -18,12 +18,12 @@ app.use(cors({
 // this route is for better auth
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
+app.use(express.json());
 
 // Totor Routes
 app.use('/api/tutor', tutorRoutes)
 
 
-app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
 
 
