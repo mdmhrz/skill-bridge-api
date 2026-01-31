@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -187,22 +181,6 @@ model Booking {
   @@map("bookings")
 }
 
-model Category {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  slug        String   @unique
-  description String?  @db.Text
-  icon        String? // Icon name or URL
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  tutors TutorCategory[]
-
-  @@map("categories")
-}
-
 model Review {
   id             String   @id @default(uuid())
   bookingId      String   @unique
@@ -224,12 +202,28 @@ model Review {
   @@map("reviews")
 }
 
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @db.Text
+  icon        String? // Icon name or URL
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tutors TutorCategory[]
+
+  @@map("categories")
+}
+
 // Junction table for many-to-many relationship between Tutors and Categories
 
 model TutorCategory {
-  id             String   @id @default(uuid())
+  id             Int      @id @default(autoincrement())
   tutorProfileId String
-  categoryId     String
+  categoryId     Int
   createdAt      DateTime @default(now())
 
   // Relations
