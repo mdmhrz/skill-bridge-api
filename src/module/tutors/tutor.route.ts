@@ -5,9 +5,11 @@ import { UserRole } from "../../enums/user.role.enum";
 
 const router = express.Router();
 
-router.post('/', auth(UserRole.TUTOR), tutorController.createTutorProfile);
+router.post('/', auth(UserRole.STUDENT), tutorController.createTutorProfile);
 router.get("/", tutorController.getAllTutor);
 router.get("/:id", tutorController.getTutorById);
+router.put("/", auth(UserRole.TUTOR), tutorController.updateTutorProfile);
+router.delete("/", auth(UserRole.TUTOR), tutorController.deleteTutorProfile);
 
 
 
