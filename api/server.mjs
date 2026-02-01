@@ -540,8 +540,8 @@ var auth = betterAuth({
     additionalFields: {
       role: {
         type: "string",
-        required: false,
-        defaultValue: "STUDENT"
+        defaultValue: "STUDENT",
+        input: false
       },
       phone: {
         type: "string",
@@ -740,41 +740,71 @@ import express from "express";
 // src/module/tutors/tutor.services.ts
 var createTutorProfile = async (userId, payload) => {
   const { categories, ...rest } = payload;
-  const result = await prisma.tutorProfile.create({
-    data: {
-      userId,
-      ...rest,
-      categories: {
-        create: categories.map((categoryId) => ({
-          category: {
-            connect: { id: categoryId }
+  if (!userId) throw new Error("User ID is required");
+  if (!categories || categories.length === 0) throw new Error("At least one category must be selected");
+  console.log(`*** Starting tutor profile creation for user: ${userId}`);
+  try {
+    const tutorProfile = await prisma.$transaction(async (tx) => {
+      console.log("*** Checking if user exists...");
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (!user) throw new Error("User not found");
+      console.log("*** Checking if user already has tutor profile...");
+      const existingProfile = await tx.tutorProfile.findUnique({
+        where: { userId }
+      });
+      if (existingProfile) throw new Error("User already has tutor profile");
+      console.log("*** Creating tutor profile...");
+      const profile = await tx.tutorProfile.create({
+        data: {
+          userId,
+          ...rest,
+          categories: {
+            create: categories.map((categoryId) => ({
+              category: { connect: { id: categoryId } }
+            }))
           }
-        }))
-      }
-    }
-  });
-  return result;
+        }
+      });
+      if (!profile) throw new Error("Tutor profile not created");
+      console.log("*** Updating user role to TUTOR...");
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: { role: "TUTOR" /* TUTOR */ }
+      });
+      if (!updatedUser) throw new Error("User role not updated");
+      console.log("*** Tutor profile created and role updated successfully");
+      return profile;
+    });
+    return tutorProfile;
+  } catch (error) {
+    console.error("Failed to create tutor profile:", error.message || error);
+    throw error;
+  }
 };
 var getAllTutor = async () => {
-  const [tutors, totalTeacher] = await Promise.all([
-    prisma.tutorProfile.findMany({
-      include: {
-        categories: {
-          select: {
-            category: {
-              select: {
-                id: true,
-                name: true,
-                description: true
+  try {
+    const [tutors, totalTeacher] = await Promise.all([
+      prisma.tutorProfile.findMany({
+        include: {
+          categories: {
+            select: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  description: true
+                }
               }
             }
           }
         }
-      }
-    }),
-    prisma.tutorProfile.count()
-  ]);
-  return { tutors, totalTeacher };
+      }),
+      prisma.tutorProfile.count()
+    ]);
+    return { tutors, totalTeacher };
+  } catch (error) {
+    throw new Error("Unable to fetch tutor profiles from database");
+  }
 };
 var getTutorById = async (id) => {
   return await prisma.tutorProfile.findUnique({
@@ -796,43 +826,169 @@ var getTutorById = async (id) => {
     }
   });
 };
+var updateTutorProfile = async (userId, payload) => {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+  if (!payload || Object.keys(payload).length === 0) {
+    throw new Error("No data provided for update");
+  }
+  try {
+    const updatedProfile = await prisma.$transaction(async (tx) => {
+      const existingProfile = await tx.tutorProfile.findUnique({
+        where: { userId }
+      });
+      if (!existingProfile) {
+        throw new Error("Tutor profile not found");
+      }
+      const {
+        categories,
+        name,
+        image,
+        phone,
+        ...tutorProfileData
+      } = payload;
+      if (name || image || phone) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            ...name && { name },
+            ...image && { image },
+            ...phone && { phone }
+          }
+        });
+      }
+      const profile = await tx.tutorProfile.update({
+        where: { userId },
+        data: tutorProfileData
+      });
+      if (categories && categories.length > 0) {
+        await tx.tutorCategory.deleteMany({
+          where: { tutorProfileId: profile.id }
+        });
+        await tx.tutorCategory.createMany({
+          data: categories.map((categoryId) => ({
+            tutorProfileId: profile.id,
+            categoryId
+          }))
+        });
+      }
+      return profile;
+    });
+    return updatedProfile;
+  } catch (error) {
+    throw error;
+  }
+};
+var deleteTutorProfile = async (userId) => {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const existingProfile = await tx.tutorProfile.findUnique({
+        where: { userId }
+      });
+      if (!existingProfile) {
+        throw new Error("Tutor profile not found");
+      }
+      await tx.tutorCategory.deleteMany({
+        where: {
+          tutorProfileId: existingProfile.id
+        }
+      });
+      await tx.tutorProfile.delete({
+        where: { userId }
+      });
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          role: "STUDENT" /* STUDENT */
+        }
+      });
+      return existingProfile;
+    });
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
 var tutorServices = {
   createTutorProfile,
   getAllTutor,
-  getTutorById
+  getTutorById,
+  updateTutorProfile,
+  deleteTutorProfile
 };
 
 // src/module/tutors/tutor.controller.ts
 var createTutorProfile2 = async (req, res) => {
   try {
     const user = req.user;
-    if (!user) {
+    if (!user || !user.id) {
       return res.status(401).json({
+        success: false,
         message: "Unauthorized: user information is missing"
       });
     }
     if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({
+        success: false,
         message: "Request payload is required"
       });
     }
-    const result = await tutorServices.createTutorProfile(
+    const { categories, hourlyRate, languages } = req.body;
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one category must be selected"
+      });
+    }
+    if (!hourlyRate || typeof hourlyRate !== "number") {
+      return res.status(400).json({
+        success: false,
+        message: "Hourly rate is required and must be a number"
+      });
+    }
+    if (!languages || !Array.isArray(languages) || languages.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one language must be selected"
+      });
+    }
+    const tutorProfile = await tutorServices.createTutorProfile(
       user.id,
       req.body
     );
     return res.status(201).json({
+      success: true,
       message: "Tutor profile created successfully",
-      data: result
+      data: tutorProfile
     });
   } catch (error) {
     if (error instanceof prismaNamespace_exports.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
         return res.status(409).json({
+          success: false,
           message: "Tutor profile already exists for this user"
         });
       }
     }
+    if (error.message === "User not found") {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+    if (error.message === "User already has tutor profile") {
+      return res.status(409).json({
+        success: false,
+        message: "User already has a tutor profile"
+      });
+    }
+    console.error(" Failed to create tutor profile:", error);
     return res.status(500).json({
+      success: false,
       message: "Failed to create tutor profile",
       error: error instanceof Error ? error.message : String(error)
     });
@@ -842,11 +998,17 @@ var getAllTutor2 = async (req, res) => {
   try {
     const result = await tutorServices.getAllTutor();
     return res.status(200).json({
+      success: true,
       message: "Tutor profiles retrieved successfully",
-      data: result
+      data: result.tutors,
+      meta: {
+        total: result.totalTeacher
+      }
     });
   } catch (error) {
+    console.error("Failed to retrieve tutor profiles:", error);
     return res.status(500).json({
+      success: false,
       message: "Failed to retrieve tutor profiles",
       error: error instanceof Error ? error.message : String(error)
     });
@@ -877,10 +1039,136 @@ var getTutorById2 = async (req, res) => {
     });
   }
 };
+var updateTutorProfile2 = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || !user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: user not authenticated"
+      });
+    }
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No update data provided"
+      });
+    }
+    const {
+      experience,
+      hourlyRate,
+      languages,
+      name,
+      phone
+    } = req.body;
+    if (experience !== void 0 && experience < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Experience must be a positive number"
+      });
+    }
+    if (hourlyRate !== void 0 && hourlyRate <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Hourly rate must be greater than zero"
+      });
+    }
+    if (languages !== void 0 && !Array.isArray(languages)) {
+      return res.status(400).json({
+        success: false,
+        message: "Languages must be an array of strings"
+      });
+    }
+    if (phone !== void 0 && typeof phone !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Phone must be a string"
+      });
+    }
+    if (name !== void 0 && typeof name !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Name must be a string"
+      });
+    }
+    const updatedProfile = await tutorServices.updateTutorProfile(
+      user.id,
+      req.body
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Tutor profile updated successfully",
+      data: updatedProfile
+    });
+  } catch (error) {
+    if (error.message === "Tutor profile not found") {
+      return res.status(404).json({
+        success: false,
+        message: "Tutor profile not found"
+      });
+    }
+    if (error.message === "No data provided for update") {
+      return res.status(400).json({
+        success: false,
+        message: "No update data provided"
+      });
+    }
+    if (error instanceof prismaNamespace_exports.PrismaClientKnownRequestError) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid update data"
+      });
+    }
+    console.error("Failed to update tutor profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update tutor profile"
+    });
+  }
+};
+var deleteTutorProfile2 = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || !user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: user not authenticated"
+      });
+    }
+    const deletedProfile = await tutorServices.deleteTutorProfile(
+      user.id
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Tutor profile deleted successfully",
+      data: deletedProfile
+    });
+  } catch (error) {
+    if (error.message === "Tutor profile not found") {
+      return res.status(404).json({
+        success: false,
+        message: "Tutor profile not found"
+      });
+    }
+    if (error instanceof prismaNamespace_exports.PrismaClientKnownRequestError) {
+      return res.status(400).json({
+        success: false,
+        message: "Failed to delete tutor profile"
+      });
+    }
+    console.error("Failed to delete tutor profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete tutor profile"
+    });
+  }
+};
 var tutorController = {
   createTutorProfile: createTutorProfile2,
   getAllTutor: getAllTutor2,
-  getTutorById: getTutorById2
+  getTutorById: getTutorById2,
+  updateTutorProfile: updateTutorProfile2,
+  deleteTutorProfile: deleteTutorProfile2
 };
 
 // src/middleware/auth.ts
@@ -925,9 +1213,11 @@ var auth_default = auth2;
 
 // src/module/tutors/tutor.route.ts
 var router = express.Router();
-router.post("/", auth_default("TUTOR" /* TUTOR */), tutorController.createTutorProfile);
+router.post("/", auth_default("STUDENT" /* STUDENT */), tutorController.createTutorProfile);
 router.get("/", tutorController.getAllTutor);
 router.get("/:id", tutorController.getTutorById);
+router.put("/", auth_default("TUTOR" /* TUTOR */), tutorController.updateTutorProfile);
+router.delete("/", auth_default("TUTOR" /* TUTOR */), tutorController.deleteTutorProfile);
 var tutorRoutes = router;
 
 // src/module/categories/category.routes.ts
@@ -937,8 +1227,23 @@ import express2 from "express";
 var getAllCategories = async () => {
   return await prisma.category.findMany();
 };
+var createCategory = async (payload) => {
+  try {
+    return await prisma.category.create({
+      data: {
+        name: payload.name,
+        slug: payload.slug,
+        description: payload.description ?? null,
+        icon: payload.icon ?? null
+      }
+    });
+  } catch (error) {
+    throw error;
+  }
+};
 var categoryServices = {
-  getAllCategories
+  getAllCategories,
+  createCategory
 };
 
 // src/module/categories/category.controller.ts
@@ -961,13 +1266,69 @@ var getAllCategories2 = async (req, res) => {
     });
   }
 };
+var createCategory2 = async (req, res) => {
+  try {
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Request payload is required"
+      });
+    }
+    const { name, slug, description } = req.body;
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Category name is required and must be a string"
+      });
+    }
+    if (!slug || typeof slug !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Category slug is required and must be a string"
+      });
+    }
+    const normalizedSlug = slug.toLowerCase().trim().replace(/\s+/g, "-");
+    if (!/^[a-z0-9-]+$/.test(normalizedSlug)) {
+      return res.status(400).json({
+        success: false,
+        message: "Slug can only contain lowercase letters, numbers, and hyphens"
+      });
+    }
+    const category = await categoryServices.createCategory({
+      name: name.trim(),
+      slug: normalizedSlug,
+      description: description?.trim() || null
+    });
+    return res.status(201).json({
+      success: true,
+      message: "Category created successfully",
+      data: category
+    });
+  } catch (error) {
+    if (error instanceof prismaNamespace_exports.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return res.status(409).json({
+          success: false,
+          message: "Category with this name or slug already exists"
+        });
+      }
+    }
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create category",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+};
 var categoryController = {
-  getAllCategories: getAllCategories2
+  getAllCategories: getAllCategories2,
+  createCategory: createCategory2
 };
 
 // src/module/categories/category.routes.ts
 var router2 = express2.Router();
 router2.get("/", categoryController.getAllCategories);
+router2.post("/", auth_default("ADMIN" /* ADMIN */), categoryController.createCategory);
 var categoryRoutes = router2;
 
 // src/module/auth/currentUserRoutes.ts

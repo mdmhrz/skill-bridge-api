@@ -8,12 +8,28 @@ const getAllCategories = async () => {
 }
 
 // create category
-const createCategory = async (payload: Category) => {
 
-    return await prisma.category.create({
-        data: payload
-    })
-}
+
+type CreateCategoryPayload = {
+    name: string;
+    slug: string;
+    description?: string | null;
+    icon?: string | null;
+};
+const createCategory = async (payload: CreateCategoryPayload) => {
+    try {
+        return await prisma.category.create({
+            data: {
+                name: payload.name,
+                slug: payload.slug,
+                description: payload.description ?? null,
+                icon: payload.icon ?? null,
+            },
+        });
+    } catch (error) {
+        throw error;
+    }
+};
 
 
 export const categoryServices = {

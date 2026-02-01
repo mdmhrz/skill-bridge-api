@@ -18,7 +18,7 @@ const createTutorProfile = async (
 ) => {
     const { categories, ...rest } = payload;
 
-    
+
 
     // Validate input
     if (!userId) throw new Error("User ID is required");
@@ -85,29 +85,35 @@ const createTutorProfile = async (
 
 // get all tutor profile
 const getAllTutor = async () => {
-    const [tutors, totalTeacher] = await Promise.all([
-        prisma.tutorProfile.findMany({
-            include: {
-                categories: {
-                    select: {
-                        category: {
-                            select: {
-                                id: true,
-                                name: true,
-                                description: true
-                            }
-                        }
-                    }
-                }
-            }
-        }),
-        prisma.tutorProfile.count(),
-    ]);
+    try {
+        const [tutors, totalTeacher] = await Promise.all([
+            prisma.tutorProfile.findMany({
+                include: {
+                    categories: {
+                        select: {
+                            category: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    description: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            }),
+            prisma.tutorProfile.count(),
+        ]);
 
-    return { tutors, totalTeacher };
+        return { tutors, totalTeacher };
+    } catch (error) {
+        throw new Error("Unable to fetch tutor profiles from database");
+    }
 };
 
 
+
+// get tutor by id
 const getTutorById = async (id: string) => {
     return await prisma.tutorProfile.findUnique({
         where: {
@@ -131,6 +137,155 @@ const getTutorById = async (id: string) => {
 
 
 
+
+// update totor profile
+
+
+export type UpdateTutorProfileDTO = {
+    // Tutor profile fields
+    bio?: string;
+    title?: string;
+    experience?: number;
+    hourlyRate?: number;
+    languages?: string[];
+    education?: string;
+    categories?: number[];
+
+    // User profile fields
+    name?: string;
+    image?: string;
+    phone?: string;
+};
+
+
+const updateTutorProfile = async (
+    userId: string,
+    payload: UpdateTutorProfileDTO
+) => {
+    if (!userId) {
+        throw new Error("User ID is required");
+    }
+
+    if (!payload || Object.keys(payload).length === 0) {
+        throw new Error("No data provided for update");
+    }
+
+    try {
+        const updatedProfile = await prisma.$transaction(async (tx) => {
+            const existingProfile = await tx.tutorProfile.findUnique({
+                where: { userId },
+            });
+
+            if (!existingProfile) {
+                throw new Error("Tutor profile not found");
+            }
+
+            // Separate payloads
+            const {
+                categories,
+                name,
+                image,
+                phone,
+                ...tutorProfileData
+            } = payload;
+
+            // Update user profile if user fields exist
+            if (name || image || phone) {
+                await tx.user.update({
+                    where: { id: userId },
+                    data: {
+                        ...(name && { name }),
+                        ...(image && { image }),
+                        ...(phone && { phone }),
+                    },
+                });
+            }
+
+            // Update tutor profile
+            const profile = await tx.tutorProfile.update({
+                where: { userId },
+                data: tutorProfileData,
+            });
+
+            // Update categories if provided
+            if (categories && categories.length > 0) {
+                await tx.tutorCategory.deleteMany({
+                    where: { tutorProfileId: profile.id },
+                });
+
+                await tx.tutorCategory.createMany({
+                    data: categories.map((categoryId) => ({
+                        tutorProfileId: profile.id,
+                        categoryId,
+                    })),
+                });
+            }
+
+            return profile;
+        });
+
+        return updatedProfile;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+
+// delete tutor profile
+const deleteTutorProfile = async (userId: string) => {
+    if (!userId) {
+        throw new Error("User ID is required");
+    }
+
+    try {
+        const result = await prisma.$transaction(async (tx) => {
+            const existingProfile = await tx.tutorProfile.findUnique({
+                where: { userId },
+            });
+
+            if (!existingProfile) {
+                throw new Error("Tutor profile not found");
+            }
+
+            // Delete associated categories
+            await tx.tutorCategory.deleteMany({
+                where: {
+                    tutorProfileId: existingProfile.id,
+                },
+            });
+
+            // Delete tutor profile
+            await tx.tutorProfile.delete({
+                where: { userId },
+            });
+
+            // Update user role
+            await tx.user.update({
+                where: { id: userId },
+                data: {
+                    role: UserRole.STUDENT,
+                },
+            });
+
+            return existingProfile;
+        });
+
+        return result;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+
+
+
+
 export const tutorServices = {
-    createTutorProfile, getAllTutor, getTutorById
+    createTutorProfile,
+    getAllTutor,
+    getTutorById,
+    updateTutorProfile,
+    deleteTutorProfile
 }
