@@ -12,13 +12,12 @@ const createAvailability = async (req: Request, res: Response) => {
             throw new AppError(httpStatus.BAD_REQUEST, "Availability data is required");
         }
 
-
         const result = await availabilityServices.createAvailability(req.body);
 
         res.status(httpStatus.CREATED).json({
             success: true,
             message: result.message,
-            data: result,
+            data: result.result,
         });
     } catch (error: any) {
         if (error instanceof AppError) {
