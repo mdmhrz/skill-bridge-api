@@ -5,7 +5,7 @@ var __export = (target, all) => {
 };
 
 // src/app.ts
-import express4 from "express";
+import express7 from "express";
 import cors from "cors";
 
 // src/middleware/notFound.ts
@@ -785,7 +785,16 @@ var getAllTutor = async () => {
   try {
     const [tutors, totalTeacher] = await Promise.all([
       prisma.tutorProfile.findMany({
+        // where: {
+        //     isVerified: true
+        // },
         include: {
+          user: {
+            select: {
+              name: true,
+              email: true
+            }
+          },
           categories: {
             select: {
               category: {
@@ -812,6 +821,12 @@ var getTutorById = async (id) => {
       id
     },
     include: {
+      user: {
+        select: {
+          name: true,
+          email: true
+        }
+      },
       categories: {
         select: {
           category: {
@@ -1346,17 +1361,813 @@ router3.get("/me", auth_default(), async (req, res) => {
 });
 var currentUserRoutes = router3;
 
+// src/module/bookings/booking.route.ts
+import express4 from "express";
+
+// src/utils/error.ts
+var AppError = class extends Error {
+  statusCode;
+  constructor(statusCode, message) {
+    super(message);
+    this.statusCode = statusCode;
+    Error.captureStackTrace(this, this.constructor);
+  }
+};
+
+// src/module/bookings/booking.services.ts
+var createBooking = async (studentId, payload) => {
+  if (!studentId) {
+    throw new AppError(401, "Unauthorized user");
+  }
+  if (!payload) {
+    throw new AppError(400, "No data provided");
+  }
+  const {
+    tutorProfileId,
+    categoryId,
+    scheduledDate,
+    duration,
+    totalPrice,
+    notes,
+    meetingLink
+  } = payload;
+  if (!tutorProfileId) {
+    throw new AppError(400, "Tutor profile ID is required");
+  }
+  if (!categoryId) {
+    throw new AppError(400, "Category ID is required");
+  }
+  if (!scheduledDate) {
+    throw new AppError(400, "Scheduled date is required");
+  }
+  if (!duration || duration <= 0) {
+    throw new AppError(400, "Duration must be greater than zero");
+  }
+  if (!totalPrice || Number(totalPrice) <= 0) {
+    throw new AppError(400, "Total price must be greater than zero");
+  }
+  const bookingDate = new Date(scheduledDate);
+  if (isNaN(bookingDate.getTime())) {
+    throw new AppError(400, "Invalid scheduled date format");
+  }
+  if (bookingDate < /* @__PURE__ */ new Date()) {
+    throw new AppError(400, "You cannot book a session in the past");
+  }
+  const tutorProfile = await prisma.tutorProfile.findUnique({
+    where: { id: tutorProfileId }
+  });
+  if (!tutorProfile) {
+    throw new AppError(404, "Tutor profile not found");
+  }
+  const category = await prisma.category.findUnique({
+    where: { id: Number(categoryId) }
+  });
+  if (!category) {
+    throw new AppError(404, "Category not found");
+  }
+  const tutorCategory = await prisma.tutorCategory.findFirst({
+    where: {
+      tutorProfileId,
+      categoryId: Number(categoryId)
+    }
+  });
+  if (!tutorCategory) {
+    throw new AppError(
+      400,
+      "This tutor does not provide sessions for this category"
+    );
+  }
+  const existingBooking = await prisma.booking.findFirst({
+    where: {
+      tutorProfileId,
+      scheduledDate: bookingDate
+    }
+  });
+  if (existingBooking?.studentId === studentId) {
+    throw new AppError(
+      409,
+      "You already have a booking at the selected time"
+    );
+  }
+  if (existingBooking) {
+    throw new AppError(
+      409,
+      "This tutor already has a booking at the selected time"
+    );
+  }
+  const booking = await prisma.booking.create({
+    data: {
+      studentId,
+      tutorProfileId,
+      categoryId,
+      scheduledDate: bookingDate,
+      duration,
+      totalPrice,
+      notes: notes || null,
+      meetingLink: meetingLink || null
+    }
+  });
+  return {
+    message: "Booking created successfully",
+    booking
+  };
+};
+var getStudentBookings = async (studentId) => {
+  if (!studentId) {
+    throw new AppError(401, "Unauthorized user");
+  }
+  const studentBookings = await prisma.booking.findMany({
+    where: { studentId },
+    orderBy: {
+      scheduledDate: "desc"
+    },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          phone: true
+        }
+      },
+      tutorProfile: {
+        select: {
+          id: true,
+          user: {
+            select: {
+              name: true,
+              email: true,
+              image: true,
+              phone: true
+            }
+          }
+        }
+      }
+    }
+  });
+  if (!studentBookings || studentBookings.length === 0) {
+    throw new AppError(404, "No bookings found for this student");
+  }
+  return {
+    message: "Bookings retrieved successfully",
+    studentBookings
+  };
+};
+var getBookingById = async (studentId, bookingId) => {
+  if (!studentId) {
+    throw new AppError(401, "Unauthorized user");
+  }
+  if (!bookingId) {
+    throw new AppError(401, "No booking ID provided");
+  }
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId, studentId },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          phone: true
+        }
+      },
+      tutorProfile: {
+        select: {
+          id: true,
+          user: {
+            select: {
+              name: true,
+              email: true,
+              image: true,
+              phone: true
+            }
+          }
+        }
+      }
+    }
+  });
+  if (!booking) {
+    throw new AppError(404, "Booking not found");
+  }
+  return {
+    message: "Booking retrieved successfully",
+    booking
+  };
+};
+var bookingServices = {
+  createBooking,
+  getStudentBookings,
+  getBookingById
+};
+
+// src/module/bookings/booking.controller.ts
+var createBooking2 = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access"
+      });
+    }
+    const result = await bookingServices.createBooking(user.id, req.body);
+    return res.status(201).json({
+      success: true,
+      message: result.message,
+      data: result.booking
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Create booking error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+var getStudentBookings2 = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access"
+      });
+    }
+    const result = await bookingServices.getStudentBookings(user.id);
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result.studentBookings
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Get student bookings error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+var getBookingById2 = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access"
+      });
+    }
+    if (!req.params.id) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking ID is required"
+      });
+    }
+    const result = await bookingServices.getBookingById(user.id, req.params.id);
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result.booking
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Get student bookings error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+var bookingController = {
+  createBooking: createBooking2,
+  getStudentBookings: getStudentBookings2,
+  getBookingById: getBookingById2
+};
+
+// src/module/bookings/booking.route.ts
+var router4 = express4.Router();
+router4.post("/", auth_default("STUDENT" /* STUDENT */), bookingController.createBooking);
+router4.get("/", auth_default("STUDENT" /* STUDENT */, "ADMIN" /* ADMIN */), bookingController.getStudentBookings);
+router4.get("/:id", auth_default("STUDENT" /* STUDENT */, "ADMIN" /* ADMIN */), bookingController.getBookingById);
+var bookingRoutes = router4;
+
+// src/module/availability/availability.route.ts
+import express5 from "express";
+
+// src/module/availability/availability.services.ts
+import httpStatus from "http-status";
+var createAvailability = async (availability) => {
+  const {
+    tutorProfileId,
+    dayOfWeek,
+    startTime,
+    endTime
+  } = availability;
+  if (!tutorProfileId || !dayOfWeek || !startTime || !endTime) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Tutor profile, day, start time and end time are required"
+    );
+  }
+  if (startTime >= endTime) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Start time must be earlier than end time"
+    );
+  }
+  const tutorProfile = await prisma.tutorProfile.findUnique({
+    where: { id: tutorProfileId }
+  });
+  if (!tutorProfile) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      "Tutor profile not found"
+    );
+  }
+  const existingAvailability = await prisma.availability.findFirst({
+    where: {
+      tutorProfileId,
+      dayOfWeek,
+      OR: [
+        {
+          startTime: { lte: startTime },
+          endTime: { gt: startTime }
+        },
+        {
+          startTime: { lt: endTime },
+          endTime: { gte: endTime }
+        }
+      ]
+    }
+  });
+  if (existingAvailability) {
+    throw new AppError(
+      httpStatus.CONFLICT,
+      "Availability already exists for this time slot"
+    );
+  }
+  const result = await prisma.availability.create({
+    data: availability
+  });
+  return {
+    message: "Availability created successfully",
+    result
+  };
+};
+var updateAvailability = async (availabilityId, userId, payload) => {
+  if (!availabilityId) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Availability ID is required"
+    );
+  }
+  const availability = await prisma.availability.findUnique({
+    where: { id: availabilityId },
+    include: {
+      tutorProfile: true
+    }
+  });
+  if (!availability) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      "Availability not found"
+    );
+  }
+  if (availability.tutorProfile.userId !== userId) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not allowed to update this availability"
+    );
+  }
+  const {
+    dayOfWeek,
+    startTime,
+    endTime,
+    isActive
+  } = payload;
+  const finalStartTime = startTime ?? availability.startTime;
+  const finalEndTime = endTime ?? availability.endTime;
+  if (finalStartTime >= finalEndTime) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Start time must be earlier than end time"
+    );
+  }
+  const overlap = await prisma.availability.findFirst({
+    where: {
+      id: { not: availabilityId },
+      tutorProfileId: availability.tutorProfileId,
+      dayOfWeek: dayOfWeek ?? availability.dayOfWeek,
+      OR: [
+        {
+          startTime: { lte: finalStartTime },
+          endTime: { gt: finalStartTime }
+        },
+        {
+          startTime: { lt: finalEndTime },
+          endTime: { gte: finalEndTime }
+        }
+      ]
+    }
+  });
+  if (overlap) {
+    throw new AppError(
+      httpStatus.CONFLICT,
+      "Availability overlaps with an existing time slot"
+    );
+  }
+  const updateData = {};
+  if (dayOfWeek !== void 0) updateData.dayOfWeek = dayOfWeek;
+  if (startTime !== void 0) updateData.startTime = startTime;
+  if (endTime !== void 0) updateData.endTime = endTime;
+  if (isActive !== void 0) updateData.isActive = isActive;
+  const result = await prisma.availability.update({
+    where: { id: availabilityId },
+    data: updateData
+  });
+  return {
+    message: "Availability updated successfully",
+    result
+  };
+};
+var availabilityServices = {
+  createAvailability,
+  updateAvailability
+};
+
+// src/module/availability/availability.controller.ts
+import httpStatus2 from "http-status";
+var createAvailability2 = async (req, res) => {
+  try {
+    if (!req.body) {
+      throw new AppError(httpStatus2.BAD_REQUEST, "Availability data is required");
+    }
+    const result = await availabilityServices.createAvailability(req.body);
+    res.status(httpStatus2.CREATED).json({
+      success: true,
+      message: result.message,
+      data: result.result
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Create availability error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create availability",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+};
+var updateAvailability2 = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+    if (!user?.id) {
+      throw new AppError(
+        httpStatus2.UNAUTHORIZED,
+        "Unauthorized access"
+      );
+    }
+    if (!id) {
+      throw new AppError(
+        httpStatus2.BAD_REQUEST,
+        "Availability ID is required"
+      );
+    }
+    if (!req.body || Object.keys(req.body).length === 0) {
+      throw new AppError(
+        httpStatus2.BAD_REQUEST,
+        "Update data is required"
+      );
+    }
+    const result = await availabilityServices.updateAvailability(
+      id,
+      user.id,
+      req.body
+    );
+    res.status(httpStatus2.OK).json({
+      success: true,
+      message: result.message,
+      data: result.result
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Update availability error:", error);
+    return res.status(httpStatus2.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to update availability"
+    });
+  }
+};
+var availabilityController = {
+  createAvailability: createAvailability2,
+  updateAvailability: updateAvailability2
+};
+
+// src/module/availability/availability.route.ts
+var router5 = express5.Router();
+router5.post("/", auth_default("TUTOR" /* TUTOR */), availabilityController.createAvailability);
+router5.put("/:id", auth_default("TUTOR" /* TUTOR */), availabilityController.updateAvailability);
+var availabilityRoutes = router5;
+
+// src/module/review/review.route.ts
+import express6 from "express";
+
+// src/module/review/review.services.ts
+import httpStatus3 from "http-status";
+var createReview = async (payload) => {
+  const { bookingId, studentId, tutorProfileId, rating, comment } = payload;
+  if (!bookingId || !studentId || !tutorProfileId || !rating) {
+    throw new AppError(
+      httpStatus3.BAD_REQUEST,
+      "bookingId, studentId, tutorProfileId, and rating are required"
+    );
+  }
+  if (rating < 1 || rating > 5) {
+    throw new AppError(
+      httpStatus3.BAD_REQUEST,
+      "Rating must be between 1 and 5"
+    );
+  }
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId }
+  });
+  if (!booking) {
+    throw new AppError(
+      httpStatus3.NOT_FOUND,
+      "Booking not found"
+    );
+  }
+  if (booking.studentId !== studentId) {
+    throw new AppError(
+      httpStatus3.FORBIDDEN,
+      "You can only review bookings you made"
+    );
+  }
+  const existingReview = await prisma.review.findUnique({
+    where: { bookingId }
+  });
+  if (existingReview) {
+    throw new AppError(
+      httpStatus3.CONFLICT,
+      "A review for this booking already exists"
+    );
+  }
+  const tutor = await prisma.tutorProfile.findUnique({
+    where: { id: tutorProfileId }
+  });
+  if (!tutor) {
+    throw new AppError(
+      httpStatus3.NOT_FOUND,
+      "Tutor profile not found"
+    );
+  }
+  const review = await prisma.review.create({
+    data: {
+      bookingId,
+      studentId,
+      tutorProfileId,
+      rating,
+      comment: comment || null
+    }
+  });
+  return {
+    message: "Review created successfully",
+    result: review
+  };
+};
+var updateReview = async (reviewId, userId, payload) => {
+  if (!reviewId) {
+    throw new AppError(httpStatus3.BAD_REQUEST, "Review ID is required");
+  }
+  if (!payload || Object.keys(payload).length === 0) {
+    throw new AppError(httpStatus3.BAD_REQUEST, "Update data is required");
+  }
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId }
+  });
+  if (!review) {
+    throw new AppError(httpStatus3.NOT_FOUND, "Review not found");
+  }
+  if (review.studentId !== userId) {
+    throw new AppError(
+      httpStatus3.FORBIDDEN,
+      "You are not allowed to update this review"
+    );
+  }
+  const { rating, comment } = payload;
+  if (rating !== void 0 && (rating < 1 || rating > 5)) {
+    throw new AppError(
+      httpStatus3.BAD_REQUEST,
+      "Rating must be between 1 and 5"
+    );
+  }
+  const updateData = {};
+  if (rating !== void 0) updateData.rating = rating;
+  if (comment !== void 0) updateData.comment = comment;
+  const updatedReview = await prisma.review.update({
+    where: { id: reviewId },
+    data: updateData
+  });
+  return {
+    message: "Review updated successfully",
+    result: updatedReview
+  };
+};
+var deleteReview = async (reviewId, userId) => {
+  if (!reviewId) {
+    throw new AppError(httpStatus3.BAD_REQUEST, "Review ID is required");
+  }
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId }
+  });
+  if (!review) {
+    throw new AppError(httpStatus3.NOT_FOUND, "Review not found");
+  }
+  if (review.studentId !== userId) {
+    throw new AppError(
+      httpStatus3.FORBIDDEN,
+      "You are not allowed to delete this review"
+    );
+  }
+  await prisma.review.delete({
+    where: { id: reviewId }
+  });
+  return {
+    message: "Review deleted successfully",
+    result: null
+  };
+};
+var reviewServices = {
+  createReview,
+  updateReview,
+  deleteReview
+};
+
+// src/module/review/review.controller.ts
+import httpStatus4 from "http-status";
+var createReview2 = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      throw new AppError(
+        httpStatus4.UNAUTHORIZED,
+        "Unauthorized access"
+      );
+    }
+    if (!req.body || Object.keys(req.body).length === 0) {
+      throw new AppError(
+        httpStatus4.BAD_REQUEST,
+        "Review data is required"
+      );
+    }
+    const payload = {
+      ...req.body,
+      studentId: user.id
+    };
+    const result = await reviewServices.createReview(payload);
+    res.status(httpStatus4.CREATED).json({
+      success: true,
+      message: result.message,
+      data: result.result
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Create review error:", error);
+    return res.status(httpStatus4.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to create review",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+};
+var updateReview2 = async (req, res) => {
+  try {
+    const user = req.user;
+    const { id } = req.params;
+    if (!user?.id) {
+      throw new AppError(httpStatus4.UNAUTHORIZED, "Unauthorized access");
+    }
+    if (!id) {
+      throw new AppError(httpStatus4.BAD_REQUEST, "Review ID is required");
+    }
+    if (!req.body || Object.keys(req.body).length === 0) {
+      throw new AppError(httpStatus4.BAD_REQUEST, "Update data is required");
+    }
+    const result = await reviewServices.updateReview(
+      id,
+      user.id,
+      req.body
+    );
+    res.status(httpStatus4.OK).json({
+      success: true,
+      message: result.message,
+      data: result.result
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Update review error:", error);
+    return res.status(httpStatus4.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to update review",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+};
+var deleteReview2 = async (req, res) => {
+  try {
+    const user = req.user;
+    const { id } = req.params;
+    if (!user?.id) {
+      throw new AppError(httpStatus4.UNAUTHORIZED, "Unauthorized access");
+    }
+    if (!id) {
+      throw new AppError(httpStatus4.BAD_REQUEST, "Review ID is required");
+    }
+    const result = await reviewServices.deleteReview(id, user.id);
+    res.status(httpStatus4.OK).json({
+      success: true,
+      message: result.message,
+      data: result.result
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Delete review error:", error);
+    return res.status(httpStatus4.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to delete review",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+};
+var reviewController = {
+  createReview: createReview2,
+  updateReview: updateReview2,
+  deleteReview: deleteReview2
+};
+
+// src/module/review/review.route.ts
+var router6 = express6.Router();
+router6.post("/", auth_default("STUDENT" /* STUDENT */), reviewController.createReview);
+router6.put("/:id", auth_default("STUDENT" /* STUDENT */), reviewController.updateReview);
+router6.delete("/:id", auth_default("STUDENT" /* STUDENT */), reviewController.deleteReview);
+var reviewRoutes = router6;
+
 // src/app.ts
-var app = express4();
+var app = express7();
 app.use(cors({
   origin: process.env.APP_URL || "http://localhost:3000",
   credentials: true
 }));
 app.all("/api/auth/*splat", toNodeHandler(auth));
-app.use(express4.json());
-app.use("/current-user", currentUserRoutes);
+app.use(express7.json());
+app.use("/api/user/current-user", currentUserRoutes);
 app.use("/api/tutor", tutorRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/booking", bookingRoutes);
+app.use("/api/availability", availabilityRoutes);
+app.use("/api/review", reviewRoutes);
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
