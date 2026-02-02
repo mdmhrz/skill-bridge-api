@@ -7,7 +7,9 @@ const createBooking = async (studentId: string, payload: Booking) => {
         throw new AppError(401, "Unauthorized user");
     }
 
-    console.log(studentId)
+    if (!payload) {
+        throw new AppError(400, "No data provided");
+    }
 
     const {
         tutorProfileId,
@@ -91,6 +93,14 @@ const createBooking = async (studentId: string, payload: Booking) => {
         },
     });
 
+    if (existingBooking?.studentId === studentId) {
+        throw new AppError(
+            409,
+            "You already have a booking at the selected time"
+        );
+    }
+
+
     if (existingBooking) {
         throw new AppError(
             409,
@@ -119,7 +129,33 @@ const createBooking = async (studentId: string, payload: Booking) => {
 };
 
 
+const getStudentBookings = async (studentId: string) => {
+    // auth validation 
+    if (!studentId) {
+        throw new AppError(401, "Unauthorized user");
+    }    
+
+    //  fetch bookings 
+    const studentBookings = await prisma.booking.findMany({
+        where: { studentId },
+        orderBy: {
+            scheduledDate: "desc",
+        },
+    });
+
+    //  no bookings 
+    if (!studentBookings || studentBookings.length === 0) {
+        throw new AppError(404, "No bookings found for this student");
+    }
+
+    return {
+        message: "Bookings retrieved successfully",
+        studentBookings,
+    };
+};
+
+
 
 export const bookingServices = {
-    createBooking
+    createBooking, getStudentBookings
 }

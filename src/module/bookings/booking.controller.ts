@@ -40,6 +40,41 @@ const createBooking = async (req: Request, res: Response) => {
 };
 
 
+const getStudentBookings = async (req: Request, res: Response) => {
+    try {
+        const user = req.user;
+
+        if (!user?.id) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized access",
+            });
+        }
+
+        const result = await bookingServices.getStudentBookings(user.id);
+
+        return res.status(200).json({
+            success: true,
+            message: result.message,
+            data: result.studentBookings,
+        });
+    } catch (error: any) {
+        if (error instanceof AppError) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
+        console.error("Get student bookings error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
 export const bookingController = {
-    createBooking
+    createBooking, getStudentBookings
 }

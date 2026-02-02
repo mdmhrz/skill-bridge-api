@@ -8,6 +8,7 @@ const router = express.Router();
 
 // router.get("/");
 router.post("/", auth(UserRole.STUDENT), bookingController.createBooking);
+router.get("/", auth(UserRole.STUDENT), bookingController.getStudentBookings);
 
 
 
