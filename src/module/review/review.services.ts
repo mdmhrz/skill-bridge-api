@@ -83,6 +83,108 @@ const createReview = async (payload: Review) => {
     };
 };
 
+
+
+
+// update review
+const updateReview = async (
+    reviewId: string,
+    userId: string,
+    payload: Partial<Pick<Review, "rating" | "comment">>
+) => {
+    // validation
+    if (!reviewId) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Review ID is required");
+    }
+
+    if (!payload || Object.keys(payload).length === 0) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Update data is required");
+    }
+
+    // fetch review
+    const review = await prisma.review.findUnique({
+        where: { id: reviewId },
+    });
+
+    if (!review) {
+        throw new AppError(httpStatus.NOT_FOUND, "Review not found");
+    }
+
+    // authorization
+    if (review.studentId !== userId) {
+        throw new AppError(
+            httpStatus.FORBIDDEN,
+            "You are not allowed to update this review"
+        );
+    }
+
+    const { rating, comment } = payload;
+
+    // validate rating
+    if (rating !== undefined && (rating < 1 || rating > 5)) {
+        throw new AppError(
+            httpStatus.BAD_REQUEST,
+            "Rating must be between 1 and 5"
+        );
+    }
+
+    // build update data
+    const updateData: any = {};
+    if (rating !== undefined) updateData.rating = rating;
+    if (comment !== undefined) updateData.comment = comment;
+
+    // update review
+    const updatedReview = await prisma.review.update({
+        where: { id: reviewId },
+        data: updateData,
+    });
+
+    return {
+        message: "Review updated successfully",
+        result: updatedReview,
+    };
+};
+
+
+
+//delete review
+
+const deleteReview = async (reviewId: string, userId: string) => {
+    // validation
+    if (!reviewId) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Review ID is required");
+    }
+
+    // fetch review
+    const review = await prisma.review.findUnique({
+        where: { id: reviewId },
+    });
+
+    if (!review) {
+        throw new AppError(httpStatus.NOT_FOUND, "Review not found");
+    }
+
+    // authorization
+    if (review.studentId !== userId) {
+        throw new AppError(
+            httpStatus.FORBIDDEN,
+            "You are not allowed to delete this review"
+        );
+    }
+
+    // delete review
+    await prisma.review.delete({
+        where: { id: reviewId },
+    });
+
+    return {
+        message: "Review deleted successfully",
+        result: null,
+    };
+};
+
 export const reviewServices = {
     createReview,
+    updateReview,
+    deleteReview,
 };
