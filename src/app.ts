@@ -8,6 +8,7 @@ import { categoryRoutes } from './module/categories/category.routes';
 import { currentUserRoutes } from './module/auth/currentUserRoutes';
 import { bookingRoutes } from './module/bookings/booking.route';
 import { availabilityRoutes } from './module/availability/availability.route';
+import { reviewRoutes } from './module/review/review.route';
 
 
 
@@ -39,6 +40,9 @@ app.use('/api/booking', bookingRoutes)
 
 //Availability routes
 app.use('/api/availability', availabilityRoutes)
+
+// Review routes
+app.use('/api/review', reviewRoutes)
 
 // app.use(express.urlencoded({ extended: true }));
 
