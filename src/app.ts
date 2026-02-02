@@ -7,6 +7,7 @@ import { tutorRoutes } from './module/tutors/tutor.route';
 import { categoryRoutes } from './module/categories/category.routes';
 import { currentUserRoutes } from './module/auth/currentUserRoutes';
 import { bookingRoutes } from './module/bookings/booking.route';
+import { availabilityRoutes } from './module/availability/availability.route';
 
 
 
@@ -36,6 +37,8 @@ app.use('/api/categories', categoryRoutes)
 // booking routes
 app.use('/api/booking', bookingRoutes)
 
+//Availability routes
+app.use('/api/availability', availabilityRoutes)
 
 // app.use(express.urlencoded({ extended: true }));
 
