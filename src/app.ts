@@ -6,6 +6,7 @@ import { auth } from './lib/auth';
 import { tutorRoutes } from './module/tutors/tutor.route';
 import { categoryRoutes } from './module/categories/category.routes';
 import { currentUserRoutes } from './module/auth/currentUserRoutes';
+import { bookingRoutes } from './module/bookings/booking.route';
 
 
 
@@ -24,13 +25,16 @@ app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
 
 // get current user
-app.use('/current-user', currentUserRoutes);
+app.use('/api/user/current-user', currentUserRoutes);
 
 // Totor Routes
 app.use('/api/tutor', tutorRoutes);
 
 // Category routes
 app.use('/api/categories', categoryRoutes)
+
+// booking routes
+app.use('/api/booking', bookingRoutes)
 
 
 // app.use(express.urlencoded({ extended: true }));

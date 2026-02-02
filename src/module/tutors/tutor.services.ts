@@ -88,7 +88,16 @@ const getAllTutor = async () => {
     try {
         const [tutors, totalTeacher] = await Promise.all([
             prisma.tutorProfile.findMany({
+                // where: {
+                //     isVerified: true
+                // },
                 include: {
+                    user: {
+                        select: {
+                            name: true,
+                            email: true
+                        },
+                    },
                     categories: {
                         select: {
                             category: {
@@ -120,6 +129,12 @@ const getTutorById = async (id: string) => {
             id
         },
         include: {
+            user: {
+                select: {
+                    name: true,
+                    email: true
+                },
+            },
             categories: {
                 select: {
                     category: {

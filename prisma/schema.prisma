@@ -152,6 +152,14 @@ model Availability {
   @@map("availability")
 }
 
+/*
+"tutorProfileId": "89497bc9-6f30-4c4c-8420-86e9821fe136",
+"categoryId": 2,
+"scheduleDate": 
+
+*/
+
+
 model Booking {
   id                 String        @id @default(uuid())
   studentId          String
