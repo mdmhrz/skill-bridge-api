@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Booking } from "../../../generated/prisma/client";
 import { bookingServices } from "./booking.services";
 import { AppError } from "../../utils/error";
+import { get } from "node:http";
 
 const createBooking = async (req: Request, res: Response) => {
     try {
@@ -75,6 +76,50 @@ const getStudentBookings = async (req: Request, res: Response) => {
     }
 };
 
+
+const getBookingById = async (req: Request, res: Response) => {
+    try {
+        const user = req.user;
+
+        if (!user?.id) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized access",
+            });
+        }
+
+        if (!req.params.id) {
+            return res.status(400).json({
+                success: false,
+                message: "Booking ID is required",
+            });
+        }
+
+        const result = await bookingServices.getBookingById(user.id, req.params.id as string);
+
+        return res.status(200).json({
+            success: true,
+            message: result.message,
+            data: result.booking,
+        });
+    } catch (error: any) {
+        if (error instanceof AppError) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
+        console.error("Get student bookings error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+
 export const bookingController = {
-    createBooking, getStudentBookings
+    createBooking, getStudentBookings, getBookingById
 }

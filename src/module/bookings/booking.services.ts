@@ -133,13 +133,36 @@ const getStudentBookings = async (studentId: string) => {
     // auth validation 
     if (!studentId) {
         throw new AppError(401, "Unauthorized user");
-    }    
+    }
 
     //  fetch bookings 
     const studentBookings = await prisma.booking.findMany({
         where: { studentId },
         orderBy: {
             scheduledDate: "desc",
+        },
+        include: {
+            student: {
+                select: {
+                    id: true,
+                    name: true,
+                    image: true,
+                    phone: true
+                },
+            },
+            tutorProfile: {
+                select: {
+                    id: true,
+                    user: {
+                        select: {
+                            name: true,
+                            email: true,
+                            image: true,
+                            phone: true
+                        },
+                    },
+                },
+            },
         },
     });
 
@@ -155,7 +178,59 @@ const getStudentBookings = async (studentId: string) => {
 };
 
 
+const getBookingById = async (studentId: string, bookingId: string) => {
+    // auth validation
+    if (!studentId) {
+        throw new AppError(401, "Unauthorized user");
+    }
+
+
+    // params validation 
+    if (!bookingId) {
+        throw new AppError(401, "No booking ID provided");
+    }
+
+    //  fetch booking 
+    const booking = await prisma.booking.findUnique({
+        where: { id: bookingId, studentId },
+        include: {
+            student: {
+                select: {
+                    id: true,
+                    name: true,
+                    image: true,
+                    phone: true
+                },
+            },
+            tutorProfile: {
+                select: {
+                    id: true,
+                    user: {
+                        select: {
+                            name: true,
+                            email: true,
+                            image: true,
+                            phone: true
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    //  no booking 
+    if (!booking) {
+        throw new AppError(404, "Booking not found");
+    }
+
+    return {
+        message: "Booking retrieved successfully",
+        booking,
+    };
+};
+
+
 
 export const bookingServices = {
-    createBooking, getStudentBookings
+    createBooking, getStudentBookings, getBookingById
 }
