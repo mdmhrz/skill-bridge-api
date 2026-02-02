@@ -6,6 +6,7 @@ import { availabilityController } from "./availability.controller";
 const router = express.Router();
 
 router.post('/', auth(UserRole.TUTOR), availabilityController.createAvailability);
+router.put('/:id', auth(UserRole.TUTOR), availabilityController.updateAvailability);
 
 
 
