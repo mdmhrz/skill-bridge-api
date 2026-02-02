@@ -5,7 +5,7 @@ var __export = (target, all) => {
 };
 
 // src/app.ts
-import express4 from "express";
+import express5 from "express";
 import cors from "cors";
 
 // src/middleware/notFound.ts
@@ -193,6 +193,12 @@ model Availability {
 
   @@map("availability")
 }
+
+/**
+ * "tutorProfileId": "89497bc9-6f30-4c4c-8420-86e9821fe136",
+ * "categoryId": 2,
+ * "scheduleDate":
+ */
 
 model Booking {
   id                 String        @id @default(uuid())
@@ -785,7 +791,16 @@ var getAllTutor = async () => {
   try {
     const [tutors, totalTeacher] = await Promise.all([
       prisma.tutorProfile.findMany({
+        // where: {
+        //     isVerified: true
+        // },
         include: {
+          user: {
+            select: {
+              name: true,
+              email: true
+            }
+          },
           categories: {
             select: {
               category: {
@@ -812,6 +827,12 @@ var getTutorById = async (id) => {
       id
     },
     include: {
+      user: {
+        select: {
+          name: true,
+          email: true
+        }
+      },
       categories: {
         select: {
           category: {
@@ -1346,17 +1367,324 @@ router3.get("/me", auth_default(), async (req, res) => {
 });
 var currentUserRoutes = router3;
 
+// src/module/bookings/booking.route.ts
+import express4 from "express";
+
+// src/utils/error.ts
+var AppError = class extends Error {
+  statusCode;
+  constructor(statusCode, message) {
+    super(message);
+    this.statusCode = statusCode;
+    Error.captureStackTrace(this, this.constructor);
+  }
+};
+
+// src/module/bookings/booking.services.ts
+var createBooking = async (studentId, payload) => {
+  if (!studentId) {
+    throw new AppError(401, "Unauthorized user");
+  }
+  if (!payload) {
+    throw new AppError(400, "No data provided");
+  }
+  const {
+    tutorProfileId,
+    categoryId,
+    scheduledDate,
+    duration,
+    totalPrice,
+    notes,
+    meetingLink
+  } = payload;
+  if (!tutorProfileId) {
+    throw new AppError(400, "Tutor profile ID is required");
+  }
+  if (!categoryId) {
+    throw new AppError(400, "Category ID is required");
+  }
+  if (!scheduledDate) {
+    throw new AppError(400, "Scheduled date is required");
+  }
+  if (!duration || duration <= 0) {
+    throw new AppError(400, "Duration must be greater than zero");
+  }
+  if (!totalPrice || Number(totalPrice) <= 0) {
+    throw new AppError(400, "Total price must be greater than zero");
+  }
+  const bookingDate = new Date(scheduledDate);
+  if (isNaN(bookingDate.getTime())) {
+    throw new AppError(400, "Invalid scheduled date format");
+  }
+  if (bookingDate < /* @__PURE__ */ new Date()) {
+    throw new AppError(400, "You cannot book a session in the past");
+  }
+  const tutorProfile = await prisma.tutorProfile.findUnique({
+    where: { id: tutorProfileId }
+  });
+  if (!tutorProfile) {
+    throw new AppError(404, "Tutor profile not found");
+  }
+  const category = await prisma.category.findUnique({
+    where: { id: Number(categoryId) }
+  });
+  if (!category) {
+    throw new AppError(404, "Category not found");
+  }
+  const tutorCategory = await prisma.tutorCategory.findFirst({
+    where: {
+      tutorProfileId,
+      categoryId: Number(categoryId)
+    }
+  });
+  if (!tutorCategory) {
+    throw new AppError(
+      400,
+      "This tutor does not provide sessions for this category"
+    );
+  }
+  const existingBooking = await prisma.booking.findFirst({
+    where: {
+      tutorProfileId,
+      scheduledDate: bookingDate
+    }
+  });
+  if (existingBooking?.studentId === studentId) {
+    throw new AppError(
+      409,
+      "You already have a booking at the selected time"
+    );
+  }
+  if (existingBooking) {
+    throw new AppError(
+      409,
+      "This tutor already has a booking at the selected time"
+    );
+  }
+  const booking = await prisma.booking.create({
+    data: {
+      studentId,
+      tutorProfileId,
+      categoryId,
+      scheduledDate: bookingDate,
+      duration,
+      totalPrice,
+      notes: notes || null,
+      meetingLink: meetingLink || null
+    }
+  });
+  return {
+    message: "Booking created successfully",
+    booking
+  };
+};
+var getStudentBookings = async (studentId) => {
+  if (!studentId) {
+    throw new AppError(401, "Unauthorized user");
+  }
+  const studentBookings = await prisma.booking.findMany({
+    where: { studentId },
+    orderBy: {
+      scheduledDate: "desc"
+    },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          phone: true
+        }
+      },
+      tutorProfile: {
+        select: {
+          id: true,
+          user: {
+            select: {
+              name: true,
+              email: true,
+              image: true,
+              phone: true
+            }
+          }
+        }
+      }
+    }
+  });
+  if (!studentBookings || studentBookings.length === 0) {
+    throw new AppError(404, "No bookings found for this student");
+  }
+  return {
+    message: "Bookings retrieved successfully",
+    studentBookings
+  };
+};
+var getBookingById = async (studentId, bookingId) => {
+  if (!studentId) {
+    throw new AppError(401, "Unauthorized user");
+  }
+  if (!bookingId) {
+    throw new AppError(401, "No booking ID provided");
+  }
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId, studentId },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          phone: true
+        }
+      },
+      tutorProfile: {
+        select: {
+          id: true,
+          user: {
+            select: {
+              name: true,
+              email: true,
+              image: true,
+              phone: true
+            }
+          }
+        }
+      }
+    }
+  });
+  if (!booking) {
+    throw new AppError(404, "Booking not found");
+  }
+  return {
+    message: "Booking retrieved successfully",
+    booking
+  };
+};
+var bookingServices = {
+  createBooking,
+  getStudentBookings,
+  getBookingById
+};
+
+// src/module/bookings/booking.controller.ts
+var createBooking2 = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access"
+      });
+    }
+    const result = await bookingServices.createBooking(user.id, req.body);
+    return res.status(201).json({
+      success: true,
+      message: result.message,
+      data: result.booking
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Create booking error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+var getStudentBookings2 = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access"
+      });
+    }
+    const result = await bookingServices.getStudentBookings(user.id);
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result.studentBookings
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Get student bookings error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+var getBookingById2 = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access"
+      });
+    }
+    if (!req.params.id) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking ID is required"
+      });
+    }
+    const result = await bookingServices.getBookingById(user.id, req.params.id);
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result.booking
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Get student bookings error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+var bookingController = {
+  createBooking: createBooking2,
+  getStudentBookings: getStudentBookings2,
+  getBookingById: getBookingById2
+};
+
+// src/module/bookings/booking.route.ts
+var router4 = express4.Router();
+router4.post("/", auth_default("STUDENT" /* STUDENT */), bookingController.createBooking);
+router4.get("/", auth_default("STUDENT" /* STUDENT */, "ADMIN" /* ADMIN */), bookingController.getStudentBookings);
+router4.get("/:id", auth_default("STUDENT" /* STUDENT */, "ADMIN" /* ADMIN */), bookingController.getBookingById);
+var bookingRoutes = router4;
+
 // src/app.ts
-var app = express4();
+var app = express5();
 app.use(cors({
   origin: process.env.APP_URL || "http://localhost:3000",
   credentials: true
 }));
 app.all("/api/auth/*splat", toNodeHandler(auth));
-app.use(express4.json());
-app.use("/current-user", currentUserRoutes);
+app.use(express5.json());
+app.use("/api/user/current-user", currentUserRoutes);
 app.use("/api/tutor", tutorRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/booking", bookingRoutes);
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
