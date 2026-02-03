@@ -1,6 +1,7 @@
 import { TutorProfile } from "../../../generated/prisma/client"
 import { UserRole } from "../../enums/user.role.enum";
 import { prisma } from "../../lib/prisma"
+import paginationSortingHelper, { IOptions } from "../../utils/paginationSortingHelper";
 
 export type CreateTutorProfileDTO = {
     bio?: string;
@@ -11,6 +12,14 @@ export type CreateTutorProfileDTO = {
     education?: string;
     categories: number[];
 };
+
+export interface GetTutorFilters extends IOptions {
+    search?: string;
+    rating?: number;
+    totalReviews?: number;
+    experience?: number;
+    hourlyRate?: number;
+}
 
 const createTutorProfile = async (
     userId: string,
@@ -84,41 +93,74 @@ const createTutorProfile = async (
 
 
 // get all tutor profile
-const getAllTutor = async () => {
-    try {
-        const [tutors, totalTeacher] = await Promise.all([
-            prisma.tutorProfile.findMany({
-                // where: {
-                //     isVerified: true
-                // },
-                include: {
-                    user: {
-                        select: {
-                            name: true,
-                            email: true
-                        },
-                    },
-                    categories: {
-                        select: {
-                            category: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    description: true,
-                                },
-                            },
-                        },
-                    },
-                },
-            }),
-            prisma.tutorProfile.count(),
-        ]);
+export interface GetTutorFilters extends IOptions {
+  search?: string;
+  experience?: number; // max experience
+}
 
-        return { tutors, totalTeacher };
-    } catch (error) {
-        throw new Error("Unable to fetch tutor profiles from database");
-    }
+const getAllTutors = async (options: GetTutorFilters = {}) => {
+  const { page, limit, skip, sortBy, sortOrder } = paginationSortingHelper(options);
+
+  const where: any = {};
+
+  // Experience filter (max experience)
+  if (options.experience !== undefined) {
+    where.experience = { lte: options.experience };
+  }
+
+  // Search filter across multiple fields
+  if (options.search) {
+    where.OR = [
+      {
+        title: { contains: options.search, mode: "insensitive" },
+      },
+      {
+        languages: { has: options.search },
+      },
+      {
+        user: {
+          OR: [
+            { name: { contains: options.search, mode: "insensitive" } },
+            { email: { contains: options.search, mode: "insensitive" } },
+          ],
+        },
+      },
+      {
+        categories: {
+          some: {
+            category: { name: { contains: options.search, mode: "insensitive" } },
+          },
+        },
+      },
+    ];
+  }
+
+  // Total count before pagination
+  const total = await prisma.tutorProfile.count({ where });
+
+  // Fetch tutors with pagination, sorting, and relations
+  const tutors = await prisma.tutorProfile.findMany({
+    where,
+    skip,
+    take: limit,
+    orderBy: sortBy ? { [sortBy]: sortOrder } : { createdAt: "desc" },
+    include: {
+      user: { select: { name: true, email: true } },
+      categories: { include: { category: true } },
+    },
+  });
+
+  return {
+    data: tutors,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
+
 
 
 
@@ -299,7 +341,7 @@ const deleteTutorProfile = async (userId: string) => {
 
 export const tutorServices = {
     createTutorProfile,
-    getAllTutor,
+    getAllTutors,
     getTutorById,
     updateTutorProfile,
     deleteTutorProfile
