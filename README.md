@@ -11,7 +11,7 @@
 
 **A comprehensive RESTful backend server for connecting students with expert tutors**
 
-[Live Demo](https://skill-bridge-backend-server.vercel.app/) • [Database Schema](https://skill-bridge-backend-server.vercel.app/database.html) • [Report Bug](https://github.com/mdmhrz/skill-bridge-api/issues) • [Request Feature](https://github.com/mdmhrz/skill-bridge-api/issues)
+[Live Demo](https://skill-bridge-backend-server.vercel.app/) • [Live Documentation](https://mdmhrz.github.io/skill-bridge-bruno-api-collection/) • [Database Schema](https://skill-bridge-backend-server.vercel.app/database.html) • [Report Bug](https://github.com/mdmhrz/skill-bridge-api/issues) • [Request Feature](https://github.com/mdmhrz/skill-bridge-api/issues)
 
 </div>
 
