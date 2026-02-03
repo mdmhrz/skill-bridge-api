@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillBridge API | Backend Server</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0e1a;
+            color: #e5e7eb;
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            background: #131829;
+            border: 1px solid #1f2937;
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #9ca3af;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #10b981;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Main Content */
+        .content {
+            background: #131829;
+            border: 1px solid #1f2937;
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            color: #e5e7eb;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        p {
+            color: #9ca3af;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .card {
+            background: #1a1f35;
+            border: 2px solid #2d3548;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
+            border-color: #667eea;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card h3 {
+            font-size: 1.2rem;
+            color: #e5e7eb;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            color: #9ca3af;
+            margin-bottom: 0;
+        }
+
+        /* Tech Stack */
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+        }
+
+        .tech-badge {
+            background: #667eea;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Links */
+        .links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* API Endpoints */
+        .endpoint-section {
+            background: #1a1f35;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .endpoint {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: #131829;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .method {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .method-get {
+            background: #10b981;
+            color: white;
+        }
+
+        .method-post {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .method-put {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .method-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .endpoint-path {
+            color: #9ca3af;
+            flex: 1;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #9ca3af;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .links {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🎓</div>
+            <h1>SkillBridge API</h1>
+            <p class="subtitle">RESTful Backend Server for Tutor-Student Platform</p>
+            <div class="status-badge">
+                <span class="status-dot"></span>
+                API Status: Online
+            </div>
+        </header>
+
+        <div class="content">
+            <h2>📋 Overview</h2>
+            <p>SkillBridge API is a comprehensive backend server built to power a modern tutor-student marketplace. It
+                provides secure authentication, role-based access control, and complete CRUD operations for managing
+                users, tutors, bookings, and reviews.</p>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-icon">🔐</div>
+                    <h3>Authentication</h3>
+                    <p>JWT-based secure authentication with role-based authorization (Student, Tutor, Admin)</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">👨‍🏫</div>
+                    <h3>Tutor Management</h3>
+                    <p>Complete profile management, availability scheduling, and category assignments</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📚</div>
+                    <h3>Booking System</h3>
+                    <p>Real-time session scheduling with status tracking and meeting link generation</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">⭐</div>
+                    <h3>Reviews & Ratings</h3>
+                    <p>Student feedback system with automatic rating aggregation for tutors</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🔍</div>
+                    <h3>Advanced Search</h3>
+                    <p>Filter tutors by category, language, rating, experience, and availability</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">⚡</div>
+                    <h3>Performance</h3>
+                    <p>Optimized database queries with indexing and efficient data pagination</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <h2>🛠️ Tech Stack</h2>
+            <div class="tech-stack">
+                <span class="tech-badge">Node.js</span>
+                <span class="tech-badge">Express.js</span>
+                <span class="tech-badge">PostgreSQL</span>
+                <span class="tech-badge">Prisma ORM</span>
+                <span class="tech-badge">JWT</span>
+                <span class="tech-badge">bcrypt</span>
+                <span class="tech-badge">TypeScript</span>
+                <span class="tech-badge">Vercel</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <h2>🔗 API Endpoints</h2>
+
+            <div class="endpoint-section">
+                <h3 style="margin-bottom: 1rem; color: #e5e7eb;">Authentication</h3>
+                <div class="endpoint">
+                    <span class="method method-post">POST</span>
+                    <span class="endpoint-path">/api/auth/register</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method method-post">POST</span>
+                    <span class="endpoint-path">/api/auth/login</span>
+                </div>
+            </div>
+
+            <div class="endpoint-section">
+                <h3 style="margin-bottom: 1rem; color: #e5e7eb;">Users</h3>
+                <div class="endpoint">
+                    <span class="method method-get">GET</span>
+                    <span class="endpoint-path">/api/users</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method method-get">GET</span>
+                    <span class="endpoint-path">/api/users/:id</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method method-put">PUT</span>
+                    <span class="endpoint-path">/api/users/:id</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="endpoint-path">/api/users/:id</span>
+                </div>
+            </div>
+
+            <div class="endpoint-section">
+                <h3 style="margin-bottom: 1rem; color: #e5e7eb;">Tutors</h3>
+                <div class="endpoint">
+                    <span class="method method-get">GET</span>
+                    <span class="endpoint-path">/api/tutors</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method method-post">POST</span>
+                    <span class="endpoint-path">/api/tutors</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method method-get">GET</span>
+                    <span class="endpoint-path">/api/tutors/:id</span>
+                </div>
+            </div>
+
+            <div class="endpoint-section">
+                <h3 style="margin-bottom: 1rem; color: #e5e7eb;">Bookings</h3>
+                <div class="endpoint">
+                    <span class="method method-get">GET</span>
+                    <span class="endpoint-path">/api/bookings</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method method-post">POST</span>
+                    <span class="endpoint-path">/api/bookings</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method method-put">PUT</span>
+                    <span class="endpoint-path">/api/bookings/:id</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <h2>🚀 Getting Started</h2>
+            <p>Access the live API at: <strong>https://skill-bridge-backend-server.vercel.app/</strong></p>
+
+            <div class="links">
+                <a href="https://skill-bridge-backend-server.vercel.app/" class="btn btn-primary" target="_blank">
+                    🌐 View Live API
+                </a>
+                <a href="https://github.com/mdmhrz/skill-bridge-api" class="btn btn-secondary" target="_blank">
+                    📦 GitHub Repository
+                </a>
+                <a href="./database.html" class="btn btn-secondary" target="_blank">
+                    📦 Database Schema & Diagram
+                </a>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 SkillBridge API. Built with ❤️ for connecting learners and tutors.</p>
+        </footer>
+    </div>
+</body>
+
+</html>

@@ -10,6 +10,7 @@ import { bookingRoutes } from './module/bookings/booking.route';
 import { availabilityRoutes } from './module/availability/availability.route';
 import { reviewRoutes } from './module/review/review.route';
 import { userRoutes } from './module/users/user.route';
+import path from "path"
 
 
 
@@ -53,10 +54,11 @@ app.use('/api/users', userRoutes)
 
 
 
-
+app.use(express.static(path.join(__dirname, "../public")));
 // root route
 app.get('/', (req: Request, res: Response) => {
-    res.send('Hello, World!');
+    // res.send('Hello, World!');
+    res.sendFile(path.join(__dirname, "../public", "index.html"))
 
 });
 
