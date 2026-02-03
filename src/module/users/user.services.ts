@@ -6,14 +6,38 @@ export interface GetUsersFilters extends IOptions {
     email?: string;
 }
 
+
+export interface GetUsersFilters extends IOptions {
+    role?: string;
+    email?: string;
+    search?: string;
+}
+
 const getUsers = async (options: GetUsersFilters = {}) => {
     const { page, limit, skip, sortBy, sortOrder } = paginationSortingHelper(options);
 
     const where: any = {};
-    if (options.role) where.role = options.role;
-    if (options.email) where.email = { contains: options.email, mode: "insensitive" };
+
+    if (options.role) {
+        where.role = options.role;
+    }
+
+    if (options.email) {
+        where.email = {
+            contains: options.email,
+            mode: "insensitive",
+        };
+    }
+
+    if (options.search) {
+        where.OR = [
+            { name: { contains: options.search, mode: "insensitive" } },
+            { email: { contains: options.search, mode: "insensitive" } },
+        ];
+    }
 
     const totalUsers = await prisma.user.count({ where });
+
 
     const users = await prisma.user.findMany({
         where,
@@ -41,6 +65,7 @@ const getUsers = async (options: GetUsersFilters = {}) => {
         },
     };
 };
+
 
 export const userServices = {
     getUsers,

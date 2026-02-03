@@ -4,6 +4,9 @@ import { AppError } from "../../utils/error";
 import httpStatus from "http-status";
 import paginationSortingHelper, { IOptions } from "../../utils/paginationSortingHelper";
 
+
+
+
 const getUsers = async (req: Request, res: Response) => {
     try {
         const user = req.user;
@@ -24,20 +27,35 @@ const getUsers = async (req: Request, res: Response) => {
             ...(req.query.sortOrder === "asc" || req.query.sortOrder === "desc" ? { sortOrder: req.query.sortOrder } : {}),
         });
 
+        const filters: {
+            role?: string;
+            email?: string;
+            search?: string;
+        } = {};
+
+
         // filters
-        const filters: Record<string, string> = {};
-        if (typeof req.query.role === "string" && req.query.role.trim() !== "") {
-            filters.role = req.query.role;
-        }
-        if (typeof req.query.email === "string" && req.query.email.trim() !== "") {
-            filters.email = req.query.email;
+        if (typeof req.query.role === "string") {
+            const role = req.query.role.toLowerCase();
+            if (!["student", "admin", "tutor"].includes(role)) {
+                throw new AppError(httpStatus.BAD_REQUEST, "Invalid user role");
+            }
+            filters.role = role.toUpperCase();
         }
 
-        // fetch users
+        if (typeof req.query.email === "string" && req.query.email.trim()) {
+            filters.email = req.query.email.trim();
+        }
+
+        if (typeof req.query.search === "string" && req.query.search.trim()) {
+            filters.search = req.query.search.trim();
+        }
+
         const result = await userServices.getUsers({
             ...paginationOptions,
             ...filters,
         });
+
 
         res.status(httpStatus.OK).json({
             success: true,
