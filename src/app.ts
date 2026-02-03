@@ -9,6 +9,7 @@ import { currentUserRoutes } from './module/auth/currentUserRoutes';
 import { bookingRoutes } from './module/bookings/booking.route';
 import { availabilityRoutes } from './module/availability/availability.route';
 import { reviewRoutes } from './module/review/review.route';
+import { userRoutes } from './module/users/user.route';
 
 
 
@@ -43,6 +44,9 @@ app.use('/api/availability', availabilityRoutes)
 
 // Review routes
 app.use('/api/review', reviewRoutes)
+
+//user routes: admin only
+app.use('/api/users', userRoutes)
 
 // app.use(express.urlencoded({ extended: true }));
 

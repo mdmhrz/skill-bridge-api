@@ -5,7 +5,7 @@ var __export = (target, all) => {
 };
 
 // src/app.ts
-import express7 from "express";
+import express8 from "express";
 import cors from "cors";
 
 // src/middleware/notFound.ts
@@ -737,6 +737,26 @@ var auth = betterAuth({
 // src/module/tutors/tutor.route.ts
 import express from "express";
 
+// src/utils/paginationSortingHelper.ts
+var paginationSortingHelper = (options = {}, defaultSortBy = "createdAt") => {
+  const page = Math.max(1, Number(options.page ?? 1));
+  const limit = Math.max(1, Number(options.limit ?? 10));
+  const skip = (page - 1) * limit;
+  let sortOrder = "desc";
+  if ((options.sortOrder || "").toLowerCase() === "asc") {
+    sortOrder = "asc";
+  }
+  const sortBy = options.sortBy || defaultSortBy;
+  return {
+    page,
+    limit,
+    skip,
+    sortBy,
+    sortOrder
+  };
+};
+var paginationSortingHelper_default = paginationSortingHelper;
+
 // src/module/tutors/tutor.services.ts
 var createTutorProfile = async (userId, payload) => {
   const { categories, ...rest } = payload;
@@ -781,39 +801,57 @@ var createTutorProfile = async (userId, payload) => {
     throw error;
   }
 };
-var getAllTutor = async () => {
-  try {
-    const [tutors, totalTeacher] = await Promise.all([
-      prisma.tutorProfile.findMany({
-        // where: {
-        //     isVerified: true
-        // },
-        include: {
-          user: {
-            select: {
-              name: true,
-              email: true
-            }
-          },
-          categories: {
-            select: {
-              category: {
-                select: {
-                  id: true,
-                  name: true,
-                  description: true
-                }
-              }
-            }
+var getAllTutors = async (options = {}) => {
+  const { page, limit, skip, sortBy, sortOrder } = paginationSortingHelper_default(options);
+  const where = {};
+  if (options.experience !== void 0) {
+    where.experience = { lte: options.experience };
+  }
+  if (options.search) {
+    where.OR = [
+      {
+        title: { contains: options.search, mode: "insensitive" }
+      },
+      {
+        languages: { has: options.search }
+      },
+      {
+        user: {
+          OR: [
+            { name: { contains: options.search, mode: "insensitive" } },
+            { email: { contains: options.search, mode: "insensitive" } }
+          ]
+        }
+      },
+      {
+        categories: {
+          some: {
+            category: { name: { contains: options.search, mode: "insensitive" } }
           }
         }
-      }),
-      prisma.tutorProfile.count()
-    ]);
-    return { tutors, totalTeacher };
-  } catch (error) {
-    throw new Error("Unable to fetch tutor profiles from database");
+      }
+    ];
   }
+  const total = await prisma.tutorProfile.count({ where });
+  const tutors = await prisma.tutorProfile.findMany({
+    where,
+    skip,
+    take: limit,
+    orderBy: sortBy ? { [sortBy]: sortOrder } : { createdAt: "desc" },
+    include: {
+      user: { select: { name: true, email: true } },
+      categories: { include: { category: true } }
+    }
+  });
+  return {
+    data: tutors,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    }
+  };
 };
 var getTutorById = async (id) => {
   return await prisma.tutorProfile.findUnique({
@@ -930,13 +968,24 @@ var deleteTutorProfile = async (userId) => {
 };
 var tutorServices = {
   createTutorProfile,
-  getAllTutor,
+  getAllTutors,
   getTutorById,
   updateTutorProfile,
   deleteTutorProfile
 };
 
+// src/utils/error.ts
+var AppError = class extends Error {
+  statusCode;
+  constructor(statusCode, message) {
+    super(message);
+    this.statusCode = statusCode;
+    Error.captureStackTrace(this, this.constructor);
+  }
+};
+
 // src/module/tutors/tutor.controller.ts
+import httpStatus from "http-status";
 var createTutorProfile2 = async (req, res) => {
   try {
     const user = req.user;
@@ -1009,20 +1058,40 @@ var createTutorProfile2 = async (req, res) => {
     });
   }
 };
-var getAllTutor2 = async (req, res) => {
+var getAllTutor = async (req, res) => {
   try {
-    const result = await tutorServices.getAllTutor();
-    return res.status(200).json({
+    const paginationOptions = paginationSortingHelper_default({
+      ...typeof req.query.page === "string" && { page: Number(req.query.page) },
+      ...typeof req.query.limit === "string" && { limit: Number(req.query.limit) },
+      ...typeof req.query.sortBy === "string" && { sortBy: req.query.sortBy },
+      ...req.query.sortOrder === "asc" || req.query.sortOrder === "desc" ? { sortOrder: req.query.sortOrder } : {}
+    });
+    const filters = {};
+    if (typeof req.query.search === "string" && req.query.search.trim()) {
+      filters.search = req.query.search.trim();
+    }
+    if (req.query.experience && !isNaN(Number(req.query.experience))) {
+      filters.experience = Number(req.query.experience);
+    }
+    const result = await tutorServices.getAllTutors({
+      ...paginationOptions,
+      ...filters
+    });
+    return res.status(httpStatus.OK).json({
       success: true,
       message: "Tutor profiles retrieved successfully",
-      data: result.tutors,
-      meta: {
-        total: result.totalTeacher
-      }
+      data: result.data,
+      meta: result.meta
     });
   } catch (error) {
-    console.error("Failed to retrieve tutor profiles:", error);
-    return res.status(500).json({
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Get tutors error:", error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to retrieve tutor profiles",
       error: error instanceof Error ? error.message : String(error)
@@ -1180,7 +1249,7 @@ var deleteTutorProfile2 = async (req, res) => {
 };
 var tutorController = {
   createTutorProfile: createTutorProfile2,
-  getAllTutor: getAllTutor2,
+  getAllTutor,
   getTutorById: getTutorById2,
   updateTutorProfile: updateTutorProfile2,
   deleteTutorProfile: deleteTutorProfile2
@@ -1363,16 +1432,6 @@ var currentUserRoutes = router3;
 
 // src/module/bookings/booking.route.ts
 import express4 from "express";
-
-// src/utils/error.ts
-var AppError = class extends Error {
-  statusCode;
-  constructor(statusCode, message) {
-    super(message);
-    this.statusCode = statusCode;
-    Error.captureStackTrace(this, this.constructor);
-  }
-};
 
 // src/module/bookings/booking.services.ts
 var createBooking = async (studentId, payload) => {
@@ -1671,7 +1730,7 @@ var bookingRoutes = router4;
 import express5 from "express";
 
 // src/module/availability/availability.services.ts
-import httpStatus from "http-status";
+import httpStatus2 from "http-status";
 var createAvailability = async (availability) => {
   const {
     tutorProfileId,
@@ -1681,13 +1740,13 @@ var createAvailability = async (availability) => {
   } = availability;
   if (!tutorProfileId || !dayOfWeek || !startTime || !endTime) {
     throw new AppError(
-      httpStatus.BAD_REQUEST,
+      httpStatus2.BAD_REQUEST,
       "Tutor profile, day, start time and end time are required"
     );
   }
   if (startTime >= endTime) {
     throw new AppError(
-      httpStatus.BAD_REQUEST,
+      httpStatus2.BAD_REQUEST,
       "Start time must be earlier than end time"
     );
   }
@@ -1696,7 +1755,7 @@ var createAvailability = async (availability) => {
   });
   if (!tutorProfile) {
     throw new AppError(
-      httpStatus.NOT_FOUND,
+      httpStatus2.NOT_FOUND,
       "Tutor profile not found"
     );
   }
@@ -1718,7 +1777,7 @@ var createAvailability = async (availability) => {
   });
   if (existingAvailability) {
     throw new AppError(
-      httpStatus.CONFLICT,
+      httpStatus2.CONFLICT,
       "Availability already exists for this time slot"
     );
   }
@@ -1733,7 +1792,7 @@ var createAvailability = async (availability) => {
 var updateAvailability = async (availabilityId, userId, payload) => {
   if (!availabilityId) {
     throw new AppError(
-      httpStatus.BAD_REQUEST,
+      httpStatus2.BAD_REQUEST,
       "Availability ID is required"
     );
   }
@@ -1745,13 +1804,13 @@ var updateAvailability = async (availabilityId, userId, payload) => {
   });
   if (!availability) {
     throw new AppError(
-      httpStatus.NOT_FOUND,
+      httpStatus2.NOT_FOUND,
       "Availability not found"
     );
   }
   if (availability.tutorProfile.userId !== userId) {
     throw new AppError(
-      httpStatus.FORBIDDEN,
+      httpStatus2.FORBIDDEN,
       "You are not allowed to update this availability"
     );
   }
@@ -1765,7 +1824,7 @@ var updateAvailability = async (availabilityId, userId, payload) => {
   const finalEndTime = endTime ?? availability.endTime;
   if (finalStartTime >= finalEndTime) {
     throw new AppError(
-      httpStatus.BAD_REQUEST,
+      httpStatus2.BAD_REQUEST,
       "Start time must be earlier than end time"
     );
   }
@@ -1788,7 +1847,7 @@ var updateAvailability = async (availabilityId, userId, payload) => {
   });
   if (overlap) {
     throw new AppError(
-      httpStatus.CONFLICT,
+      httpStatus2.CONFLICT,
       "Availability overlaps with an existing time slot"
     );
   }
@@ -1812,14 +1871,14 @@ var availabilityServices = {
 };
 
 // src/module/availability/availability.controller.ts
-import httpStatus2 from "http-status";
+import httpStatus3 from "http-status";
 var createAvailability2 = async (req, res) => {
   try {
     if (!req.body) {
-      throw new AppError(httpStatus2.BAD_REQUEST, "Availability data is required");
+      throw new AppError(httpStatus3.BAD_REQUEST, "Availability data is required");
     }
     const result = await availabilityServices.createAvailability(req.body);
-    res.status(httpStatus2.CREATED).json({
+    res.status(httpStatus3.CREATED).json({
       success: true,
       message: result.message,
       data: result.result
@@ -1845,19 +1904,19 @@ var updateAvailability2 = async (req, res) => {
     const user = req.user;
     if (!user?.id) {
       throw new AppError(
-        httpStatus2.UNAUTHORIZED,
+        httpStatus3.UNAUTHORIZED,
         "Unauthorized access"
       );
     }
     if (!id) {
       throw new AppError(
-        httpStatus2.BAD_REQUEST,
+        httpStatus3.BAD_REQUEST,
         "Availability ID is required"
       );
     }
     if (!req.body || Object.keys(req.body).length === 0) {
       throw new AppError(
-        httpStatus2.BAD_REQUEST,
+        httpStatus3.BAD_REQUEST,
         "Update data is required"
       );
     }
@@ -1866,7 +1925,7 @@ var updateAvailability2 = async (req, res) => {
       user.id,
       req.body
     );
-    res.status(httpStatus2.OK).json({
+    res.status(httpStatus3.OK).json({
       success: true,
       message: result.message,
       data: result.result
@@ -1879,7 +1938,7 @@ var updateAvailability2 = async (req, res) => {
       });
     }
     console.error("Update availability error:", error);
-    return res.status(httpStatus2.INTERNAL_SERVER_ERROR).json({
+    return res.status(httpStatus3.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to update availability"
     });
@@ -1900,18 +1959,18 @@ var availabilityRoutes = router5;
 import express6 from "express";
 
 // src/module/review/review.services.ts
-import httpStatus3 from "http-status";
+import httpStatus4 from "http-status";
 var createReview = async (payload) => {
   const { bookingId, studentId, tutorProfileId, rating, comment } = payload;
   if (!bookingId || !studentId || !tutorProfileId || !rating) {
     throw new AppError(
-      httpStatus3.BAD_REQUEST,
+      httpStatus4.BAD_REQUEST,
       "bookingId, studentId, tutorProfileId, and rating are required"
     );
   }
   if (rating < 1 || rating > 5) {
     throw new AppError(
-      httpStatus3.BAD_REQUEST,
+      httpStatus4.BAD_REQUEST,
       "Rating must be between 1 and 5"
     );
   }
@@ -1920,13 +1979,13 @@ var createReview = async (payload) => {
   });
   if (!booking) {
     throw new AppError(
-      httpStatus3.NOT_FOUND,
+      httpStatus4.NOT_FOUND,
       "Booking not found"
     );
   }
   if (booking.studentId !== studentId) {
     throw new AppError(
-      httpStatus3.FORBIDDEN,
+      httpStatus4.FORBIDDEN,
       "You can only review bookings you made"
     );
   }
@@ -1935,7 +1994,7 @@ var createReview = async (payload) => {
   });
   if (existingReview) {
     throw new AppError(
-      httpStatus3.CONFLICT,
+      httpStatus4.CONFLICT,
       "A review for this booking already exists"
     );
   }
@@ -1944,7 +2003,7 @@ var createReview = async (payload) => {
   });
   if (!tutor) {
     throw new AppError(
-      httpStatus3.NOT_FOUND,
+      httpStatus4.NOT_FOUND,
       "Tutor profile not found"
     );
   }
@@ -1964,27 +2023,27 @@ var createReview = async (payload) => {
 };
 var updateReview = async (reviewId, userId, payload) => {
   if (!reviewId) {
-    throw new AppError(httpStatus3.BAD_REQUEST, "Review ID is required");
+    throw new AppError(httpStatus4.BAD_REQUEST, "Review ID is required");
   }
   if (!payload || Object.keys(payload).length === 0) {
-    throw new AppError(httpStatus3.BAD_REQUEST, "Update data is required");
+    throw new AppError(httpStatus4.BAD_REQUEST, "Update data is required");
   }
   const review = await prisma.review.findUnique({
     where: { id: reviewId }
   });
   if (!review) {
-    throw new AppError(httpStatus3.NOT_FOUND, "Review not found");
+    throw new AppError(httpStatus4.NOT_FOUND, "Review not found");
   }
   if (review.studentId !== userId) {
     throw new AppError(
-      httpStatus3.FORBIDDEN,
+      httpStatus4.FORBIDDEN,
       "You are not allowed to update this review"
     );
   }
   const { rating, comment } = payload;
   if (rating !== void 0 && (rating < 1 || rating > 5)) {
     throw new AppError(
-      httpStatus3.BAD_REQUEST,
+      httpStatus4.BAD_REQUEST,
       "Rating must be between 1 and 5"
     );
   }
@@ -2002,17 +2061,17 @@ var updateReview = async (reviewId, userId, payload) => {
 };
 var deleteReview = async (reviewId, userId) => {
   if (!reviewId) {
-    throw new AppError(httpStatus3.BAD_REQUEST, "Review ID is required");
+    throw new AppError(httpStatus4.BAD_REQUEST, "Review ID is required");
   }
   const review = await prisma.review.findUnique({
     where: { id: reviewId }
   });
   if (!review) {
-    throw new AppError(httpStatus3.NOT_FOUND, "Review not found");
+    throw new AppError(httpStatus4.NOT_FOUND, "Review not found");
   }
   if (review.studentId !== userId) {
     throw new AppError(
-      httpStatus3.FORBIDDEN,
+      httpStatus4.FORBIDDEN,
       "You are not allowed to delete this review"
     );
   }
@@ -2031,19 +2090,19 @@ var reviewServices = {
 };
 
 // src/module/review/review.controller.ts
-import httpStatus4 from "http-status";
+import httpStatus5 from "http-status";
 var createReview2 = async (req, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
       throw new AppError(
-        httpStatus4.UNAUTHORIZED,
+        httpStatus5.UNAUTHORIZED,
         "Unauthorized access"
       );
     }
     if (!req.body || Object.keys(req.body).length === 0) {
       throw new AppError(
-        httpStatus4.BAD_REQUEST,
+        httpStatus5.BAD_REQUEST,
         "Review data is required"
       );
     }
@@ -2052,7 +2111,7 @@ var createReview2 = async (req, res) => {
       studentId: user.id
     };
     const result = await reviewServices.createReview(payload);
-    res.status(httpStatus4.CREATED).json({
+    res.status(httpStatus5.CREATED).json({
       success: true,
       message: result.message,
       data: result.result
@@ -2065,7 +2124,7 @@ var createReview2 = async (req, res) => {
       });
     }
     console.error("Create review error:", error);
-    return res.status(httpStatus4.INTERNAL_SERVER_ERROR).json({
+    return res.status(httpStatus5.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to create review",
       error: error instanceof Error ? error.message : String(error)
@@ -2077,20 +2136,20 @@ var updateReview2 = async (req, res) => {
     const user = req.user;
     const { id } = req.params;
     if (!user?.id) {
-      throw new AppError(httpStatus4.UNAUTHORIZED, "Unauthorized access");
+      throw new AppError(httpStatus5.UNAUTHORIZED, "Unauthorized access");
     }
     if (!id) {
-      throw new AppError(httpStatus4.BAD_REQUEST, "Review ID is required");
+      throw new AppError(httpStatus5.BAD_REQUEST, "Review ID is required");
     }
     if (!req.body || Object.keys(req.body).length === 0) {
-      throw new AppError(httpStatus4.BAD_REQUEST, "Update data is required");
+      throw new AppError(httpStatus5.BAD_REQUEST, "Update data is required");
     }
     const result = await reviewServices.updateReview(
       id,
       user.id,
       req.body
     );
-    res.status(httpStatus4.OK).json({
+    res.status(httpStatus5.OK).json({
       success: true,
       message: result.message,
       data: result.result
@@ -2103,7 +2162,7 @@ var updateReview2 = async (req, res) => {
       });
     }
     console.error("Update review error:", error);
-    return res.status(httpStatus4.INTERNAL_SERVER_ERROR).json({
+    return res.status(httpStatus5.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to update review",
       error: error instanceof Error ? error.message : String(error)
@@ -2115,13 +2174,13 @@ var deleteReview2 = async (req, res) => {
     const user = req.user;
     const { id } = req.params;
     if (!user?.id) {
-      throw new AppError(httpStatus4.UNAUTHORIZED, "Unauthorized access");
+      throw new AppError(httpStatus5.UNAUTHORIZED, "Unauthorized access");
     }
     if (!id) {
-      throw new AppError(httpStatus4.BAD_REQUEST, "Review ID is required");
+      throw new AppError(httpStatus5.BAD_REQUEST, "Review ID is required");
     }
     const result = await reviewServices.deleteReview(id, user.id);
-    res.status(httpStatus4.OK).json({
+    res.status(httpStatus5.OK).json({
       success: true,
       message: result.message,
       data: result.result
@@ -2134,7 +2193,7 @@ var deleteReview2 = async (req, res) => {
       });
     }
     console.error("Delete review error:", error);
-    return res.status(httpStatus4.INTERNAL_SERVER_ERROR).json({
+    return res.status(httpStatus5.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to delete review",
       error: error instanceof Error ? error.message : String(error)
@@ -2154,20 +2213,138 @@ router6.put("/:id", auth_default("STUDENT" /* STUDENT */), reviewController.upda
 router6.delete("/:id", auth_default("STUDENT" /* STUDENT */), reviewController.deleteReview);
 var reviewRoutes = router6;
 
+// src/module/users/user.route.ts
+import express7 from "express";
+
+// src/module/users/user.services.ts
+var getUsers = async (options = {}) => {
+  const { page, limit, skip, sortBy, sortOrder } = paginationSortingHelper_default(options);
+  const where = {};
+  if (options.role) {
+    where.role = options.role;
+  }
+  if (options.email) {
+    where.email = {
+      contains: options.email,
+      mode: "insensitive"
+    };
+  }
+  if (options.search) {
+    where.OR = [
+      { name: { contains: options.search, mode: "insensitive" } },
+      { email: { contains: options.search, mode: "insensitive" } }
+    ];
+  }
+  const totalUsers = await prisma.user.count({ where });
+  const users = await prisma.user.findMany({
+    where,
+    skip,
+    take: limit,
+    orderBy: { [sortBy]: sortOrder },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
+  return {
+    message: "Users retrieved successfully",
+    data: users,
+    pagination: {
+      total: totalUsers,
+      page,
+      limit,
+      totalPages: Math.ceil(totalUsers / limit)
+    }
+  };
+};
+var userServices = {
+  getUsers
+};
+
+// src/module/users/user.controller.ts
+import httpStatus6 from "http-status";
+var getUsers2 = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      throw new AppError(httpStatus6.UNAUTHORIZED, "Unauthorized access");
+    }
+    if (user.role !== "ADMIN") {
+      throw new AppError(httpStatus6.FORBIDDEN, "Access denied: Admins only");
+    }
+    const paginationOptions = paginationSortingHelper_default({
+      ...typeof req.query.page === "string" ? { page: Number(req.query.page) } : {},
+      ...typeof req.query.limit === "string" ? { limit: Number(req.query.limit) } : {},
+      ...typeof req.query.sortBy === "string" ? { sortBy: req.query.sortBy } : {},
+      ...req.query.sortOrder === "asc" || req.query.sortOrder === "desc" ? { sortOrder: req.query.sortOrder } : {}
+    });
+    const filters = {};
+    if (typeof req.query.role === "string") {
+      const role = req.query.role.toLowerCase();
+      if (!["student", "admin", "tutor"].includes(role)) {
+        throw new AppError(httpStatus6.BAD_REQUEST, "Invalid user role");
+      }
+      filters.role = role.toUpperCase();
+    }
+    if (typeof req.query.email === "string" && req.query.email.trim()) {
+      filters.email = req.query.email.trim();
+    }
+    if (typeof req.query.search === "string" && req.query.search.trim()) {
+      filters.search = req.query.search.trim();
+    }
+    const result = await userServices.getUsers({
+      ...paginationOptions,
+      ...filters
+    });
+    res.status(httpStatus6.OK).json({
+      success: true,
+      message: result.message,
+      data: result.data,
+      pagination: result.pagination
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Get users error:", error);
+    return res.status(httpStatus6.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to retrieve users",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+};
+var userController = {
+  getUsers: getUsers2
+};
+
+// src/module/users/user.route.ts
+var router7 = express7.Router();
+router7.get("/", auth_default("ADMIN" /* ADMIN */), userController.getUsers);
+var userRoutes = router7;
+
 // src/app.ts
-var app = express7();
+var app = express8();
 app.use(cors({
   origin: process.env.APP_URL || "http://localhost:3000",
   credentials: true
 }));
 app.all("/api/auth/*splat", toNodeHandler(auth));
-app.use(express7.json());
+app.use(express8.json());
 app.use("/api/user/current-user", currentUserRoutes);
 app.use("/api/tutor", tutorRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/booking", bookingRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/review", reviewRoutes);
+app.use("/api/users", userRoutes);
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });

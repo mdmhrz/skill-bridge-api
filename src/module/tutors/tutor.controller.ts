@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import { tutorServices } from "./tutor.services";
 import { Prisma } from "../../../generated/prisma/client";
-import { success } from "better-auth";
+import { AppError } from "../../utils/error";
+import httpStatus from "http-status";
+import paginationSortingHelper, { IOptions } from "../../utils/paginationSortingHelper";
+
 
 
 const createTutorProfile = async (req: Request, res: Response) => {
@@ -99,26 +102,59 @@ const createTutorProfile = async (req: Request, res: Response) => {
 // get all tutor
 const getAllTutor = async (req: Request, res: Response) => {
     try {
-        const result = await tutorServices.getAllTutor();
+        // Pagination & Sorting
+        const paginationOptions: IOptions = paginationSortingHelper({
+            ...(typeof req.query.page === "string" && { page: Number(req.query.page) }),
+            ...(typeof req.query.limit === "string" && { limit: Number(req.query.limit) }),
+            ...(typeof req.query.sortBy === "string" && { sortBy: req.query.sortBy }),
+            ...(req.query.sortOrder === "asc" || req.query.sortOrder === "desc"
+                ? { sortOrder: req.query.sortOrder }
+                : {}),
+        });
 
-        return res.status(200).json({
+        // Filters
+        const filters: {
+            search?: string;
+            experience?: number;
+        } = {};
+
+        if (typeof req.query.search === "string" && req.query.search.trim()) {
+            filters.search = req.query.search.trim();
+        }
+
+        if (req.query.experience && !isNaN(Number(req.query.experience))) {
+            filters.experience = Number(req.query.experience);
+        }
+
+        const result = await tutorServices.getAllTutors({
+            ...paginationOptions,
+            ...filters,
+        });
+
+        return res.status(httpStatus.OK).json({
             success: true,
             message: "Tutor profiles retrieved successfully",
-            data: result.tutors,
-            meta: {
-                total: result.totalTeacher,
-            },
+            data: result.data,
+            meta: result.meta,
         });
     } catch (error: any) {
-        console.error("Failed to retrieve tutor profiles:", error);
+        if (error instanceof AppError) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message,
+            });
+        }
 
-        return res.status(500).json({
+        console.error("Get tutors error:", error);
+
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: "Failed to retrieve tutor profiles",
             error: error instanceof Error ? error.message : String(error),
         });
     }
 };
+
 
 
 // get tutor by id
