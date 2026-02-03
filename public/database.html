@@ -7,6 +7,7 @@
     <title>SkillBridge Database Schema | ERD Documentation</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Your original styles – kept intact */
         * {
             margin: 0;
             padding: 0;
@@ -29,8 +30,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background:
-                radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+            background: radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
                 radial-gradient(circle at 80% 70%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
@@ -44,7 +44,6 @@
             z-index: 1;
         }
 
-        /* Header */
         header {
             background: #131829;
             border: 1px solid #1f2937;
@@ -73,7 +72,6 @@
             margin-bottom: 1.5rem;
         }
 
-        /* Legend */
         .legend {
             background: #131829;
             border: 1px solid #1f2937;
@@ -129,7 +127,6 @@
             color: #e5e7eb;
         }
 
-        /* ERD Canvas */
         .erd-section {
             background: #131829;
             border: 1px solid #1f2937;
@@ -142,11 +139,10 @@
 
         .erd-canvas {
             position: relative;
-            min-height: 1200px;
+            min-height: 1400px;
             width: 100%;
         }
 
-        /* Entities */
         .entity {
             position: absolute;
             background: #1a1f35;
@@ -155,7 +151,7 @@
             overflow: hidden;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
-            min-width: 280px;
+            min-width: 300px;
         }
 
         .entity:hover {
@@ -193,7 +189,6 @@
             align-items: center;
             gap: 0.75rem;
             font-size: 0.9rem;
-            transition: background 0.2s ease;
         }
 
         .field:hover {
@@ -254,43 +249,6 @@
             border-left: 3px solid #3b82f6;
         }
 
-        /* Entity Positions */
-        .entity-user {
-            top: 50px;
-            left: 50px;
-        }
-
-        .entity-tutor {
-            top: 50px;
-            left: 400px;
-        }
-
-        .entity-category {
-            top: 50px;
-            left: 750px;
-        }
-
-        .entity-tutor-category {
-            top: 50px;
-            left: 1050px;
-        }
-
-        .entity-availability {
-            top: 400px;
-            left: 400px;
-        }
-
-        .entity-booking {
-            top: 400px;
-            left: 50px;
-        }
-
-        .entity-review {
-            top: 750px;
-            left: 50px;
-        }
-
-        /* SVG Connections */
         svg {
             position: absolute;
             top: 0;
@@ -303,7 +261,7 @@
         .connection {
             stroke-width: 2;
             fill: none;
-            opacity: 0.6;
+            opacity: 0.7;
         }
 
         .conn-one-to-one {
@@ -316,10 +274,9 @@
 
         .conn-many-to-many {
             stroke: #f59e0b;
-            stroke-dasharray: 8, 4;
+            stroke-dasharray: 8 4;
         }
 
-        /* Stats */
         .stats-section {
             background: #131829;
             border: 1px solid #1f2937;
@@ -358,7 +315,6 @@
             font-weight: 500;
         }
 
-        /* Footer */
         footer {
             text-align: center;
             padding: 2rem;
@@ -370,25 +326,13 @@
             text-decoration: underline;
         }
 
-        h2 {
-            font-size: 1.8rem;
-            color: #e5e7eb;
-            margin-bottom: 1rem;
-            font-weight: 700;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2rem;
-            }
-
+        @media (max-width:768px) {
             .erd-canvas {
-                min-height: 1600px;
+                min-height: 2200px;
             }
 
             .entity {
-                min-width: 260px;
+                min-width: 280px;
             }
         }
     </style>
@@ -399,374 +343,275 @@
         <header>
             <div class="logo">📊</div>
             <h1>SkillBridge Database Schema</h1>
-            <p class="subtitle">Complete Entity Relationship Diagram & Data Model</p>
+            <p class="subtitle">Entity Relationship Diagram • PostgreSQL + Prisma</p>
         </header>
 
         <div class="legend">
-            <h2>🔗 Relationship Types</h2>
+            <h2>🔗 Relationship Legend</h2>
             <div class="legend-grid">
                 <div class="legend-item">
-                    <div class="legend-line one-to-one"></div>
-                    <span class="legend-text">One-to-One</span>
+                    <div class="legend-line one-to-one"></div><span class="legend-text">One-to-One</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-line one-to-many"></div>
-                    <span class="legend-text">One-to-Many</span>
+                    <div class="legend-line one-to-many"></div><span class="legend-text">One-to-Many</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-line many-to-many"></div>
-                    <span class="legend-text">Many-to-Many</span>
+                    <div class="legend-line many-to-many"></div><span class="legend-text">Many-to-Many</span>
                 </div>
             </div>
         </div>
 
         <div class="erd-section">
-            <h2 style="text-align: center; margin-bottom: 2rem;">Database Schema Overview</h2>
+            <h2 style="text-align:center; margin-bottom:2.5rem;">Entity Relationship Diagram</h2>
 
             <div class="erd-canvas">
+
                 <svg>
-                    <!-- User to TutorProfile (1:1) -->
-                    <path d="M 330 140 L 400 140" class="connection conn-one-to-one" />
+                    <!-- 1:1  User ↔ TutorProfile -->
+                    <path d="M 380 130 L 680 130" class="connection conn-one-to-one" />
 
-                    <!-- User to Booking (1:N) -->
-                    <path d="M 165 300 L 165 400" class="connection conn-one-to-many" />
+                    <!-- 1:N  User → Booking (as student) -->
+                    <path d="M 200 280 L 200 420" class="connection conn-one-to-many" />
 
-                    <!-- TutorProfile to Booking (1:N) -->
-                    <path d="M 400 300 L 330 400" class="connection conn-one-to-many" />
+                    <!-- 1:N  TutorProfile → Booking -->
+                    <path d="M 680 280 L 380 420" class="connection conn-one-to-many" />
 
-                    <!-- TutorProfile to Availability (1:N) -->
-                    <path d="M 540 300 L 540 400" class="connection conn-one-to-many" />
+                    <!-- 1:N  TutorProfile → Availability -->
+                    <path d="M 860 280 L 860 420" class="connection conn-one-to-many" />
 
-                    <!-- TutorProfile to TutorCategory (1:N) -->
-                    <path d="M 680 140 L 1050 140" class="connection conn-one-to-many" />
+                    <!-- 1:N  TutorProfile → TutorCategory -->
+                    <path d="M 1000 130 L 1280 130" class="connection conn-one-to-many" />
 
-                    <!-- Category to TutorCategory (1:N) -->
-                    <path d="M 920 240 L 1050 240" class="connection conn-one-to-many" />
+                    <!-- 1:N  Category → TutorCategory -->
+                    <path d="M 1100 230 L 1280 230" class="connection conn-one-to-many" />
 
-                    <!-- Booking to Review (1:1) -->
-                    <path d="M 165 600 L 165 750" class="connection conn-one-to-one" />
+                    <!-- 1:1  Booking ↔ Review -->
+                    <path d="M 200 680 L 200 850" class="connection conn-one-to-one" />
 
-                    <!-- User to Review (1:N) -->
-                    <path d="M 50 300 L 50 850" class="connection conn-one-to-many" />
+                    <!-- 1:N  User → Review (as student) -->
+                    <path d="M 80 280 L 80 950" class="connection conn-one-to-many" />
 
-                    <!-- TutorProfile to Review (1:N) -->
-                    <path d="M 400 300 L 50 850 Q 50 850 280 850" class="connection conn-one-to-many" />
+                    <!-- 1:N  TutorProfile → Review -->
+                    <path d="M 680 280 Q 680 950, 80 950" class="connection conn-one-to-many" />
                 </svg>
 
-                <!-- User Entity -->
-                <div class="entity entity-user">
+                <!-- ───────────── User ───────────── -->
+                <div class="entity" style="top:40px; left:40px;">
                     <div class="entity-header">
                         <div class="entity-icon">👤</div>
                         <div class="entity-name">User</div>
                     </div>
                     <div class="entity-fields">
-                        <div class="field pk">
-                            <span class="field-icon">🔑</span>
-                            <span class="field-name">id</span>
-                            <span class="badge badge-pk">PK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">📧</span>
-                            <span class="field-name">email</span>
-                            <span class="field-type">String</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">🔒</span>
-                            <span class="field-name">password</span>
-                            <span class="field-type">String</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">📝</span>
-                            <span class="field-name">firstName</span>
-                            <span class="field-type">String</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">📝</span>
-                            <span class="field-name">lastName</span>
-                            <span class="field-type">String</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">🎭</span>
-                            <span class="field-name">role</span>
-                            <span class="badge badge-enum">ENUM</span>
-                            <span class="field-type">Role</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">🚦</span>
-                            <span class="field-name">status</span>
-                            <span class="badge badge-enum">ENUM</span>
-                            <span class="field-type">UserStatus</span>
-                        </div>
+                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
+                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
+                        <div class="field"><span class="field-icon">📧</span><span class="field-name">email</span><span
+                                class="field-type">String @unique</span></div>
+                        <div class="field"><span class="field-icon">🔒</span><span
+                                class="field-name">password</span><span class="field-type">String?</span></div>
+                        <div class="field"><span class="field-icon">📝</span><span
+                                class="field-name">firstName</span><span class="field-type">String</span></div>
+                        <div class="field"><span class="field-icon">📝</span><span
+                                class="field-name">lastName</span><span class="field-type">String</span></div>
+                        <div class="field"><span class="field-icon">🎭</span><span class="field-name">role</span><span
+                                class="badge badge-enum">ENUM</span><span class="field-type">Role</span></div>
+                        <div class="field"><span class="field-icon">🚦</span><span class="field-name">status</span><span
+                                class="badge badge-enum">ENUM</span><span class="field-type">UserStatus</span></div>
+                        <div class="field"><span class="field-icon">📅</span><span
+                                class="field-name">emailVerified</span><span class="field-type">DateTime?</span></div>
+                        <div class="field"><span class="field-icon">🖼️</span><span class="field-name">image</span><span
+                                class="field-type">String?</span></div>
                     </div>
                 </div>
 
-                <!-- TutorProfile Entity -->
-                <div class="entity entity-tutor">
+                <!-- ───────────── TutorProfile ───────────── -->
+                <div class="entity" style="top:40px; left:620px;">
                     <div class="entity-header">
                         <div class="entity-icon">👨‍🏫</div>
                         <div class="entity-name">TutorProfile</div>
                     </div>
                     <div class="entity-fields">
-                        <div class="field pk">
-                            <span class="field-icon">🔑</span>
-                            <span class="field-name">id</span>
-                            <span class="badge badge-pk">PK</span>
-                            <span class="field-type">UUID</span>
+                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
+                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
+                        <div class="field fk"><span class="field-icon">🔗</span><span
+                                class="field-name">userId</span><span class="badge badge-fk">FK</span><span
+                                class="field-type">UUID @unique</span></div>
+                        <div class="field"><span class="field-icon">📄</span><span class="field-name">title</span><span
+                                class="field-type">String</span></div>
+                        <div class="field"><span class="field-icon">📝</span><span class="field-name">bio</span><span
+                                class="field-type">Text</span></div>
+                        <div class="field"><span class="field-icon">🎓</span><span
+                                class="field-name">education</span><span class="field-type">String?</span></div>
+                        <div class="field"><span class="field-icon">💼</span><span
+                                class="field-name">experience</span><span class="field-type">Int</span></div>
+                        <div class="field"><span class="field-icon">💰</span><span
+                                class="field-name">hourlyRate</span><span class="field-type">Decimal</span></div>
+                        <div class="field"><span class="field-icon">🌐</span><span
+                                class="field-name">languages</span><span class="field-type">String[]</span></div>
+                        <div class="field"><span class="field-icon">⭐</span><span
+                                class="field-name">averageRating</span><span class="field-type">Decimal
+                                @default(0)</span></div>
+                        <div class="field"><span class="field-icon">🔢</span><span
+                                class="field-name">reviewCount</span><span class="field-type">Int @default(0)</span>
                         </div>
-                        <div class="field fk">
-                            <span class="field-icon">🔗</span>
-                            <span class="field-name">userId</span>
-                            <span class="badge badge-fk">FK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">📄</span>
-                            <span class="field-name">bio</span>
-                            <span class="field-type">Text</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">💰</span>
-                            <span class="field-name">hourlyRate</span>
-                            <span class="field-type">Decimal</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">⭐</span>
-                            <span class="field-name">rating</span>
-                            <span class="field-type">Decimal</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">✅</span>
-                            <span class="field-name">isVerified</span>
-                            <span class="field-type">Boolean</span>
-                        </div>
+                        <div class="field"><span class="field-icon">✅</span><span
+                                class="field-name">isVerified</span><span class="field-type">Boolean
+                                @default(false)</span></div>
                     </div>
                 </div>
 
-                <!-- Category Entity -->
-                <div class="entity entity-category">
+                <!-- ───────────── Category ───────────── -->
+                <div class="entity" style="top:40px; left:1050px;">
                     <div class="entity-header">
                         <div class="entity-icon">📚</div>
                         <div class="entity-name">Category</div>
                     </div>
                     <div class="entity-fields">
-                        <div class="field pk">
-                            <span class="field-icon">🔑</span>
-                            <span class="field-name">id</span>
-                            <span class="badge badge-pk">PK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">📝</span>
-                            <span class="field-name">name</span>
-                            <span class="field-type">String</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">🔗</span>
-                            <span class="field-name">slug</span>
-                            <span class="field-type">String</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">📄</span>
-                            <span class="field-name">description</span>
-                            <span class="field-type">Text</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">🚦</span>
-                            <span class="field-name">isActive</span>
-                            <span class="field-type">Boolean</span>
+                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
+                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
+                        <div class="field"><span class="field-icon">🏷️</span><span class="field-name">name</span><span
+                                class="field-type">String</span></div>
+                        <div class="field"><span class="field-icon">🔗</span><span class="field-name">slug</span><span
+                                class="field-type">String @unique</span></div>
+                        <div class="field"><span class="field-icon">📄</span><span
+                                class="field-name">description</span><span class="field-type">Text?</span></div>
+                        <div class="field"><span class="field-icon">🖼️</span><span class="field-name">icon</span><span
+                                class="field-type">String?</span></div>
+                        <div class="field"><span class="field-icon">🚦</span><span
+                                class="field-name">isActive</span><span class="field-type">Boolean @default(true)</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- TutorCategory Entity -->
-                <div class="entity entity-tutor-category">
+                <!-- ───────────── TutorCategory (junction) ───────────── -->
+                <div class="entity" style="top:40px; left:1250px;">
                     <div class="entity-header">
                         <div class="entity-icon">🔗</div>
                         <div class="entity-name">TutorCategory</div>
                     </div>
                     <div class="entity-fields">
-                        <div class="field pk">
-                            <span class="field-icon">🔑</span>
-                            <span class="field-name">id</span>
-                            <span class="badge badge-pk">PK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field fk">
-                            <span class="field-icon">🔗</span>
-                            <span class="field-name">tutorProfileId</span>
-                            <span class="badge badge-fk">FK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field fk">
-                            <span class="field-icon">🔗</span>
-                            <span class="field-name">categoryId</span>
-                            <span class="badge badge-fk">FK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
+                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
+                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
+                        <div class="field fk"><span class="field-icon">👨‍🏫</span><span
+                                class="field-name">tutorProfileId</span><span class="badge badge-fk">FK</span><span
+                                class="field-type">UUID</span></div>
+                        <div class="field fk"><span class="field-icon">📚</span><span
+                                class="field-name">categoryId</span><span class="badge badge-fk">FK</span><span
+                                class="field-type">UUID</span></div>
                     </div>
                 </div>
 
-                <!-- Availability Entity -->
-                <div class="entity entity-availability">
+                <!-- ───────────── Availability ───────────── -->
+                <div class="entity" style="top:380px; left:780px;">
                     <div class="entity-header">
                         <div class="entity-icon">📅</div>
                         <div class="entity-name">Availability</div>
                     </div>
                     <div class="entity-fields">
-                        <div class="field pk">
-                            <span class="field-icon">🔑</span>
-                            <span class="field-name">id</span>
-                            <span class="badge badge-pk">PK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field fk">
-                            <span class="field-icon">🔗</span>
-                            <span class="field-name">tutorProfileId</span>
-                            <span class="badge badge-fk">FK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">📆</span>
-                            <span class="field-name">dayOfWeek</span>
-                            <span class="badge badge-enum">ENUM</span>
-                            <span class="field-type">DayOfWeek</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">🕐</span>
-                            <span class="field-name">startTime</span>
-                            <span class="field-type">String</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">🕔</span>
-                            <span class="field-name">endTime</span>
-                            <span class="field-type">String</span>
+                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
+                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
+                        <div class="field fk"><span class="field-icon">🔗</span><span
+                                class="field-name">tutorProfileId</span><span class="badge badge-fk">FK</span><span
+                                class="field-type">UUID</span></div>
+                        <div class="field"><span class="field-icon">📆</span><span
+                                class="field-name">dayOfWeek</span><span class="badge badge-enum">ENUM</span><span
+                                class="field-type">DayOfWeek</span></div>
+                        <div class="field"><span class="field-icon">🕐</span><span
+                                class="field-name">startTime</span><span class="field-type">String</span></div>
+                        <div class="field"><span class="field-icon">🕔</span><span
+                                class="field-name">endTime</span><span class="field-type">String</span></div>
+                        <div class="field"><span class="field-icon">🚦</span><span
+                                class="field-name">isActive</span><span class="field-type">Boolean @default(true)</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Booking Entity -->
-                <div class="entity entity-booking">
+                <!-- ───────────── Booking ───────────── -->
+                <div class="entity" style="top:380px; left:40px;">
                     <div class="entity-header">
                         <div class="entity-icon">📖</div>
                         <div class="entity-name">Booking</div>
                     </div>
                     <div class="entity-fields">
-                        <div class="field pk">
-                            <span class="field-icon">🔑</span>
-                            <span class="field-name">id</span>
-                            <span class="badge badge-pk">PK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field fk">
-                            <span class="field-icon">🔗</span>
-                            <span class="field-name">studentId</span>
-                            <span class="badge badge-fk">FK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field fk">
-                            <span class="field-icon">🔗</span>
-                            <span class="field-name">tutorProfileId</span>
-                            <span class="badge badge-fk">FK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">📅</span>
-                            <span class="field-name">scheduledDate</span>
-                            <span class="field-type">DateTime</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">💵</span>
-                            <span class="field-name">totalPrice</span>
-                            <span class="field-type">Decimal</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">📊</span>
-                            <span class="field-name">status</span>
-                            <span class="badge badge-enum">ENUM</span>
-                            <span class="field-type">BookingStatus</span>
+                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
+                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
+                        <div class="field fk"><span class="field-icon">👩‍🎓</span><span
+                                class="field-name">studentId</span><span class="badge badge-fk">FK</span><span
+                                class="field-type">UUID</span></div>
+                        <div class="field fk"><span class="field-icon">👨‍🏫</span><span
+                                class="field-name">tutorProfileId</span><span class="badge badge-fk">FK</span><span
+                                class="field-type">UUID</span></div>
+                        <div class="field fk"><span class="field-icon">📚</span><span
+                                class="field-name">categoryId</span><span class="badge badge-fk">FK</span><span
+                                class="field-type">UUID?</span></div>
+                        <div class="field"><span class="field-icon">📅</span><span
+                                class="field-name">scheduledDate</span><span class="field-type">DateTime</span></div>
+                        <div class="field"><span class="field-icon">⏱️</span><span
+                                class="field-name">duration</span><span class="field-type">Int</span></div>
+                        <div class="field"><span class="field-icon">💵</span><span
+                                class="field-name">totalPrice</span><span class="field-type">Decimal</span></div>
+                        <div class="field"><span class="field-icon">📊</span><span class="field-name">status</span><span
+                                class="badge badge-enum">ENUM</span><span class="field-type">BookingStatus</span></div>
+                        <div class="field"><span class="field-icon">🔗</span><span
+                                class="field-name">meetingLink</span><span class="field-type">String?</span></div>
+                        <div class="field"><span class="field-icon">📝</span><span class="field-name">notes</span><span
+                                class="field-type">Text?</span></div>
+                        <div class="field"><span class="field-icon">❌</span><span
+                                class="field-name">cancellationReason</span><span class="field-type">String?</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Review Entity -->
-                <div class="entity entity-review">
+                <!-- ───────────── Review ───────────── -->
+                <div class="entity" style="top:780px; left:40px;">
                     <div class="entity-header">
                         <div class="entity-icon">⭐</div>
                         <div class="entity-name">Review</div>
                     </div>
                     <div class="entity-fields">
-                        <div class="field pk">
-                            <span class="field-icon">🔑</span>
-                            <span class="field-name">id</span>
-                            <span class="badge badge-pk">PK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field fk">
-                            <span class="field-icon">🔗</span>
-                            <span class="field-name">bookingId</span>
-                            <span class="badge badge-fk">FK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field fk">
-                            <span class="field-icon">🔗</span>
-                            <span class="field-name">studentId</span>
-                            <span class="badge badge-fk">FK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field fk">
-                            <span class="field-icon">🔗</span>
-                            <span class="field-name">tutorProfileId</span>
-                            <span class="badge badge-fk">FK</span>
-                            <span class="field-type">UUID</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">⭐</span>
-                            <span class="field-name">rating</span>
-                            <span class="field-type">Int</span>
-                        </div>
-                        <div class="field">
-                            <span class="field-icon">💬</span>
-                            <span class="field-name">comment</span>
-                            <span class="field-type">Text</span>
-                        </div>
+                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
+                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
+                        <div class="field fk"><span class="field-icon">📖</span><span
+                                class="field-name">bookingId</span><span class="badge badge-fk">FK</span><span
+                                class="field-type">UUID @unique</span></div>
+                        <div class="field fk"><span class="field-icon">👩‍🎓</span><span
+                                class="field-name">studentId</span><span class="badge badge-fk">FK</span><span
+                                class="field-type">UUID</span></div>
+                        <div class="field fk"><span class="field-icon">👨‍🏫</span><span
+                                class="field-name">tutorProfileId</span><span class="badge badge-fk">FK</span><span
+                                class="field-type">UUID</span></div>
+                        <div class="field"><span class="field-icon">⭐</span><span class="field-name">rating</span><span
+                                class="field-type">Int</span></div>
+                        <div class="field"><span class="field-icon">💬</span><span
+                                class="field-name">comment</span><span class="field-type">Text?</span></div>
+                        <div class="field"><span class="field-icon">📅</span><span
+                                class="field-name">createdAt</span><span class="field-type">DateTime
+                                @default(now())</span></div>
                     </div>
                 </div>
+
             </div>
         </div>
 
         <div class="stats-section">
-            <h2>📊 Database Statistics</h2>
+            <h2>📊 Schema Statistics</h2>
             <div class="stats-grid">
-                <div class="stat-card">
-                    <span class="stat-number">7</span>
-                    <span class="stat-label">Total Tables</span>
+                <div class="stat-card"><span class="stat-number">7</span><span class="stat-label">Main Tables</span>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-number">4</span>
-                    <span class="stat-label">Enum Types</span>
+                <div class="stat-card"><span class="stat-number">4</span><span class="stat-label">Enum Types</span>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-number">12</span>
-                    <span class="stat-label">Relationships</span>
+                <div class="stat-card"><span class="stat-number">11+</span><span class="stat-label">Relationships</span>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-number">✓</span>
-                    <span class="stat-label">Cascade Deletes</span>
+                <div class="stat-card"><span class="stat-number">UUID</span><span class="stat-label">Primary Keys</span>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-number">✓</span>
-                    <span class="stat-label">Indexed Queries</span>
+                <div class="stat-card"><span class="stat-number">✓</span><span class="stat-label">Cascade deletes</span>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-number">UUID</span>
-                    <span class="stat-label">Primary Keys</span>
+                <div class="stat-card"><span class="stat-number">✓</span><span class="stat-label">Indexed fields</span>
                 </div>
             </div>
         </div>
 
         <footer>
-            <p>&copy; 2026 SkillBridge Database Schema. Designed for scalability and performance.</p>
+            <p>© 2026 SkillBridge • Database designed for scalability and tutor-student marketplace needs</p>
         </footer>
     </div>
 </body>
