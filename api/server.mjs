@@ -2331,6 +2331,7 @@ router7.get("/", auth_default("ADMIN" /* ADMIN */), userController.getUsers);
 var userRoutes = router7;
 
 // src/app.ts
+import path2 from "path";
 var app = express8();
 app.use(cors({
   origin: process.env.APP_URL || "http://localhost:3000",
@@ -2345,8 +2346,9 @@ app.use("/api/booking", bookingRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/review", reviewRoutes);
 app.use("/api/users", userRoutes);
+app.use(express8.static(path2.join(__dirname, "../public")));
 app.get("/", (req, res) => {
-  res.send("Hello, World!");
+  res.sendFile(path2.join(__dirname, "../public", "index.html"));
 });
 app.use(notFound_default);
 var app_default = app;
