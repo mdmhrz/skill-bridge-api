@@ -721,15 +721,16 @@ var auth = betterAuth({
         console.log("verify email send fail");
         throw err;
       }
-    },
-    // Social Login Implementation
-    socialProviders: {
-      google: {
-        prompt: "select_account consent",
-        accessType: "offline",
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET
-      }
+    }
+  },
+  baseURL: process.env.BETTER_AUTH_URL,
+  // Social Login Implementation
+  socialProviders: {
+    google: {
+      prompt: "select_account consent",
+      accessType: "offline",
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET
     }
   }
 });
