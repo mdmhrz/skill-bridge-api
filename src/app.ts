@@ -16,6 +16,8 @@ import path from "path"
 
 
 const app: Application = express();
+// experimental
+app.set("trust proxy", 1);
 
 const allowedOrigins = [
     process.env.APP_URL || "http://localhost:3000",
