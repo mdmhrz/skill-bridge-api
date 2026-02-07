@@ -546,11 +546,11 @@ var auth = betterAuth({
   advanced: {
     cookiePrefix: "better-auth",
     useSecureCookies: process.env.NODE_ENV === "production",
+    sameSite: "none",
     crossSubDomainCookies: {
-      enabled: false
+      enabled: true
     },
     disableCSRFCheck: true
-    // Allow requests without Origin header
   },
   user: {
     additionalFields: {
@@ -2350,6 +2350,7 @@ var userRoutes = router7;
 // src/app.ts
 import path2 from "path";
 var app = express8();
+app.set("trust proxy", 1);
 var allowedOrigins = [
   process.env.APP_URL || "http://localhost:3000",
   process.env.PROD_APP_URL
