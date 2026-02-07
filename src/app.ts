@@ -20,8 +20,9 @@ const app: Application = express();
 app.set("trust proxy", 1);
 
 const allowedOrigins = [
-    process.env.APP_URL || "http://localhost:3000",
-    process.env.PROD_APP_URL, //Frontend production url
+    // process.env.APP_URL || "http://localhost:3000",
+    // process.env.PROD_APP_URL, //Frontend production url
+    "https://skill-bridge-client-server.vercel.app"
 ].filter(Boolean);
 
 
