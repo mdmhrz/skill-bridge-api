@@ -536,6 +536,22 @@ var auth = betterAuth({
     // or "mysql", "postgresql", ...etc
   }),
   trustedOrigins: [process.env.APP_URL],
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60
+      // 5 minutes
+    }
+  },
+  advanced: {
+    cookiePrefix: "better-auth",
+    useSecureCookies: process.env.NODE_ENV === "production",
+    crossSubDomainCookies: {
+      enabled: false
+    },
+    disableCSRFCheck: true
+    // Allow requests without Origin header (Postman, mobile apps, etc.)
+  },
   user: {
     additionalFields: {
       role: {
@@ -2334,10 +2350,27 @@ var userRoutes = router7;
 // src/app.ts
 import path2 from "path";
 var app = express8();
-app.use(cors({
-  origin: process.env.APP_URL || "http://localhost:3000",
-  credentials: true
-}));
+var allowedOrigins = [
+  process.env.APP_URL || "http://localhost:3000"
+  // process.env.PROD_APP_URL, //Frontend production url
+].filter(Boolean);
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const isAllowed = allowedOrigins.includes(origin) || /^https:\/\/skill-bridge-client-server*\.vercel\.app$/.test(origin) || /^https:\/\/.*\.vercel\.app$/.test(origin);
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+    exposedHeaders: ["Set-Cookie"]
+  })
+);
 app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express8.json());
 app.use("/api/user/current-user", currentUserRoutes);
