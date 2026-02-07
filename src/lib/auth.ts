@@ -20,11 +20,11 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql", // or "mysql", "postgresql", ...etc
   }),
-  trustedOrigins: [process.env.APP_URL!, process.env.PROD_APP_URL!],
+  trustedOrigins: [process.env.PROD_APP_URL!],
   session: {
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60, // 5 minutes
+      maxAge: 5 * 60 * 60 * 24, // 5 days 
     },
   },
   advanced: {
