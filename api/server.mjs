@@ -2460,8 +2460,18 @@ app.get("/", (req, res) => {
 app.use(notFound_default);
 var app_default = app;
 
-// src/index.ts
-var index_default = app_default;
-export {
-  index_default as default
-};
+// src/server.ts
+var port = process.env.PORT || 5e3;
+async function main() {
+  try {
+    await prisma.$connect();
+    app_default.listen(port, () => {
+      console.log(`Server is running on http://localhost:${port}`);
+    });
+  } catch (error) {
+    console.error("Error during server startup:", error);
+    await prisma.$disconnect();
+    process.exit(1);
+  }
+}
+main();
