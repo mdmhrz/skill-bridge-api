@@ -20,7 +20,7 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql", // or "mysql", "postgresql", ...etc
   }),
-  trustedOrigins: [process.env.APP_URL!],
+  trustedOrigins: [process.env.APP_URL!, process.env.PROD_APP_URL!],
   session: {
     cookieCache: {
       enabled: true,
@@ -33,7 +33,7 @@ export const auth = betterAuth({
     crossSubDomainCookies: {
       enabled: false,
     },
-    disableCSRFCheck: true, // Allow requests without Origin header (Postman, mobile apps, etc.)
+    disableCSRFCheck: true, // Allow requests without Origin header
   },
 
   user: {

@@ -19,7 +19,7 @@ const app: Application = express();
 
 const allowedOrigins = [
     process.env.APP_URL || "http://localhost:3000",
-    // process.env.PROD_APP_URL, //Frontend production url
+    process.env.PROD_APP_URL, //Frontend production url
 ].filter(Boolean);
 
 
