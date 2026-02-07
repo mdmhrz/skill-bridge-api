@@ -535,7 +535,8 @@ var auth = betterAuth({
     provider: "postgresql"
     // or "mysql", "postgresql", ...etc
   }),
-  trustedOrigins: [process.env.PROD_APP_URL],
+  trustedOrigins: ["https://skill-bridge-client-server.vercel.app/"],
+  //process.env.PROD_APP_URL!
   session: {
     cookieCache: {
       enabled: true,
@@ -2352,9 +2353,9 @@ import path2 from "path";
 var app = express8();
 app.set("trust proxy", 1);
 var allowedOrigins = [
-  process.env.APP_URL || "http://localhost:3000",
-  process.env.PROD_APP_URL
-  //Frontend production url
+  // process.env.APP_URL || "http://localhost:3000",
+  // process.env.PROD_APP_URL, //Frontend production url
+  "https://skill-bridge-client-server.vercel.app"
 ].filter(Boolean);
 app.use(
   cors({
