@@ -535,7 +535,7 @@ var auth = betterAuth({
     provider: "postgresql"
     // or "mysql", "postgresql", ...etc
   }),
-  trustedOrigins: [process.env.APP_URL],
+  trustedOrigins: [process.env.APP_URL, process.env.PROD_APP_URL],
   session: {
     cookieCache: {
       enabled: true,
@@ -550,7 +550,7 @@ var auth = betterAuth({
       enabled: false
     },
     disableCSRFCheck: true
-    // Allow requests without Origin header (Postman, mobile apps, etc.)
+    // Allow requests without Origin header
   },
   user: {
     additionalFields: {
@@ -2351,8 +2351,9 @@ var userRoutes = router7;
 import path2 from "path";
 var app = express8();
 var allowedOrigins = [
-  process.env.APP_URL || "http://localhost:3000"
-  // process.env.PROD_APP_URL, //Frontend production url
+  process.env.APP_URL || "http://localhost:3000",
+  process.env.PROD_APP_URL
+  //Frontend production url
 ].filter(Boolean);
 app.use(
   cors({
