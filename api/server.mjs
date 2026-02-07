@@ -806,7 +806,7 @@ var getAllTutors = async (options = {}) => {
   const { page, limit, skip, sortBy, sortOrder } = paginationSortingHelper_default(options);
   const where = {};
   if (options.experience !== void 0) {
-    where.experience = { lte: options.experience };
+    where.experience = { gte: options.experience };
   }
   if (options.search) {
     where.OR = [
