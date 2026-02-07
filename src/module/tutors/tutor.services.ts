@@ -94,71 +94,71 @@ const createTutorProfile = async (
 
 // get all tutor profile
 export interface GetTutorFilters extends IOptions {
-  search?: string;
-  experience?: number; // max experience
+    search?: string;
+    experience?: number; // max experience
 }
 
 const getAllTutors = async (options: GetTutorFilters = {}) => {
-  const { page, limit, skip, sortBy, sortOrder } = paginationSortingHelper(options);
+    const { page, limit, skip, sortBy, sortOrder } = paginationSortingHelper(options);
 
-  const where: any = {};
+    const where: any = {};
 
-  // Experience filter (max experience)
-  if (options.experience !== undefined) {
-    where.experience = { lte: options.experience };
-  }
+    // Experience filter (max experience)
+    if (options.experience !== undefined) {
+        where.experience = { gte: options.experience };
+    }
 
-  // Search filter across multiple fields
-  if (options.search) {
-    where.OR = [
-      {
-        title: { contains: options.search, mode: "insensitive" },
-      },
-      {
-        languages: { has: options.search },
-      },
-      {
-        user: {
-          OR: [
-            { name: { contains: options.search, mode: "insensitive" } },
-            { email: { contains: options.search, mode: "insensitive" } },
-          ],
+    // Search filter across multiple fields
+    if (options.search) {
+        where.OR = [
+            {
+                title: { contains: options.search, mode: "insensitive" },
+            },
+            {
+                languages: { has: options.search },
+            },
+            {
+                user: {
+                    OR: [
+                        { name: { contains: options.search, mode: "insensitive" } },
+                        { email: { contains: options.search, mode: "insensitive" } },
+                    ],
+                },
+            },
+            {
+                categories: {
+                    some: {
+                        category: { name: { contains: options.search, mode: "insensitive" } },
+                    },
+                },
+            },
+        ];
+    }
+
+    // Total count before pagination
+    const total = await prisma.tutorProfile.count({ where });
+
+    // Fetch tutors with pagination, sorting, and relations
+    const tutors = await prisma.tutorProfile.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: sortBy ? { [sortBy]: sortOrder } : { createdAt: "desc" },
+        include: {
+            user: { select: { name: true, email: true } },
+            categories: { include: { category: true } },
         },
-      },
-      {
-        categories: {
-          some: {
-            category: { name: { contains: options.search, mode: "insensitive" } },
-          },
+    });
+
+    return {
+        data: tutors,
+        meta: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
         },
-      },
-    ];
-  }
-
-  // Total count before pagination
-  const total = await prisma.tutorProfile.count({ where });
-
-  // Fetch tutors with pagination, sorting, and relations
-  const tutors = await prisma.tutorProfile.findMany({
-    where,
-    skip,
-    take: limit,
-    orderBy: sortBy ? { [sortBy]: sortOrder } : { createdAt: "desc" },
-    include: {
-      user: { select: { name: true, email: true } },
-      categories: { include: { category: true } },
-    },
-  });
-
-  return {
-    data: tutors,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
+    };
 };
 
 
