@@ -20,7 +20,7 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql", // or "mysql", "postgresql", ...etc
   }),
-  trustedOrigins: ["https://skill-bridge-client-server.vercel.app/"], //process.env.PROD_APP_URL!
+  trustedOrigins: [process.env.APP_URL!, process.env.PROD_APP_URL!],
   session: {
     cookieCache: {
       enabled: true,

@@ -17,12 +17,11 @@ import path from "path"
 
 const app: Application = express();
 // experimental
-app.set("trust proxy", 1);
+// app.set("trust proxy", 1);
 
 const allowedOrigins = [
-    // process.env.APP_URL || "http://localhost:3000",
-    // process.env.PROD_APP_URL, //Frontend production url
-    "https://skill-bridge-client-server.vercel.app"
+    process.env.APP_URL || "http://localhost:3000",
+    process.env.PROD_APP_URL, //Frontend production url
 ].filter(Boolean);
 
 
