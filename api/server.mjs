@@ -535,8 +535,7 @@ var auth = betterAuth({
     provider: "postgresql"
     // or "mysql", "postgresql", ...etc
   }),
-  trustedOrigins: ["https://skill-bridge-client-server.vercel.app/"],
-  //process.env.PROD_APP_URL!
+  trustedOrigins: [process.env.APP_URL, process.env.PROD_APP_URL],
   session: {
     cookieCache: {
       enabled: true,
@@ -873,16 +872,16 @@ var getAllTutors = async (options = {}) => {
 };
 var getTutorById = async (id) => {
   return await prisma.tutorProfile.findUnique({
-    where: {
-      id
-    },
+    where: { id },
     include: {
+      // about tutor
       user: {
         select: {
           name: true,
           email: true
         }
       },
+      // tutor categories
       categories: {
         select: {
           category: {
@@ -892,6 +891,58 @@ var getTutorById = async (id) => {
               description: true
             }
           }
+        }
+      },
+      // about tutor availability
+      availability: {
+        select: {
+          id: true,
+          dayOfWeek: true,
+          startTime: true,
+          endTime: true
+        }
+      },
+      // tutor bookings
+      bookings: {
+        select: {
+          id: true,
+          scheduledDate: true,
+          student: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true
+            }
+          }
+        }
+      },
+      // last 5 reviews with details
+      reviews: {
+        orderBy: {
+          createdAt: "desc"
+        },
+        take: 5,
+        select: {
+          id: true,
+          rating: true,
+          comment: true,
+          student: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true
+            }
+          }
+        }
+      },
+      // total review count
+      _count: {
+        select: {
+          reviews: true,
+          bookings: true,
+          availability: true
         }
       }
     }
@@ -1513,6 +1564,26 @@ var createBooking = async (studentId, payload) => {
       400,
       "This tutor does not provide sessions for this category"
     );
+  }
+  const bookingDay = bookingDate.toLocaleString("en-US", { weekday: "long" }).toUpperCase();
+  const bookingTimeInMinutes = bookingDate.getHours() * 60 + bookingDate.getMinutes();
+  const availability = await prisma.availability.findMany({
+    where: { tutorProfileId }
+  });
+  if (!availability.length) {
+    throw new AppError(404, "No availability set for this tutor");
+  }
+  const isAvailable = availability.some((avail) => {
+    if (!avail.startTime || !avail.endTime) return false;
+    if (avail.dayOfWeek !== bookingDay) return false;
+    const [startHour, startMinute] = avail.startTime.split(":").map(Number);
+    const [endHour, endMinute] = avail.endTime.split(":").map(Number);
+    const startTimeInMinutes = startHour * 60 + startMinute;
+    const endTimeInMinutes = endHour * 60 + endMinute;
+    return bookingTimeInMinutes >= startTimeInMinutes && bookingTimeInMinutes + duration * 60 <= endTimeInMinutes;
+  });
+  if (!isAvailable) {
+    throw new AppError(400, "The selected time is outside the tutor's availability");
   }
   const existingBooking = await prisma.booking.findFirst({
     where: {
@@ -2351,11 +2422,10 @@ var userRoutes = router7;
 // src/app.ts
 import path2 from "path";
 var app = express8();
-app.set("trust proxy", 1);
 var allowedOrigins = [
-  // process.env.APP_URL || "http://localhost:3000",
-  // process.env.PROD_APP_URL, //Frontend production url
-  "https://skill-bridge-client-server.vercel.app"
+  process.env.APP_URL || "http://localhost:3000",
+  process.env.PROD_APP_URL
+  //Frontend production url
 ].filter(Boolean);
 app.use(
   cors({
