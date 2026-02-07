@@ -167,30 +167,91 @@ const getAllTutors = async (options: GetTutorFilters = {}) => {
 // get tutor by id
 const getTutorById = async (id: string) => {
     return await prisma.tutorProfile.findUnique({
-        where: {
-            id
-        },
+        where: { id },
+
         include: {
+            // about tutor
             user: {
                 select: {
                     name: true,
-                    email: true
+                    email: true,
                 },
             },
+
+            // tutor categories
             categories: {
                 select: {
                     category: {
                         select: {
                             id: true,
                             name: true,
-                            description: true
-                        }
-                    }
+                            description: true,
+                        },
+                    },
+                },
+            },
+
+            // about tutor availability
+            availability: {
+                select: {
+                    id: true,
+                    dayOfWeek: true,
+                    startTime: true,
+                    endTime: true,
+                },
+            },
+
+            // tutor bookings
+            bookings: {
+                select: {
+                    id: true,
+                    scheduledDate: true,
+                    student: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            image: true
+                        },
+                    },
+                },
+            },
+
+            // last 5 reviews with details
+            reviews: {
+                orderBy: {
+                    createdAt: "desc",
+                },
+                take: 5,
+                select: {
+                    id: true,
+                    rating: true,
+                    comment: true,
+                    student: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            image: true
+                        },
+                    },
                 }
-            }
-        }
+
+            },
+
+
+            // total review count
+            _count: {
+                select: {
+                    reviews: true,
+                    bookings: true,
+                    availability: true
+                },
+            },
+        },
     })
-};
+}
+
 
 
 

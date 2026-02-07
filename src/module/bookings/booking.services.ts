@@ -85,6 +85,48 @@ const createBooking = async (studentId: string, payload: Booking) => {
         );
     }
 
+
+    // Check if booking time is within tutor's availability
+    const bookingDay = bookingDate.toLocaleString("en-US", { weekday: "long" }).toUpperCase();
+    const bookingTimeInMinutes = bookingDate.getHours() * 60 + bookingDate.getMinutes();
+
+    const availability = await prisma.availability.findMany({
+        where: { tutorProfileId },
+    });
+
+    // If tutor has no availability at all
+    if (!availability.length) {
+        throw new AppError(404, "No availability set for this tutor");
+    }
+
+    // Check if booking fits in any availability slot
+    const isAvailable = availability.some(avail => {
+
+        if (!avail.startTime || !avail.endTime) return false;
+
+        // Check if day matches
+        if (avail.dayOfWeek !== bookingDay) return false;
+
+        // Parse start & end times
+        const [startHour, startMinute] = avail.startTime.split(":").map(Number);
+        const [endHour, endMinute] = avail.endTime.split(":").map(Number);
+
+        // Convert to minutes
+        const startTimeInMinutes = startHour! * 60 + startMinute!;
+        const endTimeInMinutes = endHour! * 60 + endMinute!;
+
+        // Check if session fits in the slot
+        return (
+            bookingTimeInMinutes >= startTimeInMinutes &&
+            bookingTimeInMinutes + duration * 60 <= endTimeInMinutes
+        );
+    });
+
+    if (!isAvailable) {
+        throw new AppError(400, "The selected time is outside the tutor's availability");
+    }
+
+
     //  Prevent duplicate booking (same tutor + time) 
     const existingBooking = await prisma.booking.findFirst({
         where: {
