@@ -202,20 +202,20 @@ const getTutorById = async (id: string) => {
             },
 
             // tutor bookings
-            bookings: {
-                select: {
-                    id: true,
-                    scheduledDate: true,
-                    student: {
-                        select: {
-                            id: true,
-                            name: true,
-                            email: true,
-                            image: true
-                        },
-                    },
-                },
-            },
+            // bookings: {
+            //     select: {
+            //         id: true,
+            //         scheduledDate: true,
+            //         student: {
+            //             select: {
+            //                 id: true,
+            //                 name: true,
+            //                 email: true,
+            //                 image: true
+            //             },
+            //         },
+            //     },
+            // },
 
             // last 5 reviews with details
             reviews: {

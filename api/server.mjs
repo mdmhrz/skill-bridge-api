@@ -903,20 +903,20 @@ var getTutorById = async (id) => {
         }
       },
       // tutor bookings
-      bookings: {
-        select: {
-          id: true,
-          scheduledDate: true,
-          student: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true
-            }
-          }
-        }
-      },
+      // bookings: {
+      //     select: {
+      //         id: true,
+      //         scheduledDate: true,
+      //         student: {
+      //             select: {
+      //                 id: true,
+      //                 name: true,
+      //                 email: true,
+      //                 image: true
+      //             },
+      //         },
+      //     },
+      // },
       // last 5 reviews with details
       reviews: {
         orderBy: {
@@ -1534,13 +1534,16 @@ var createBooking = async (studentId, payload) => {
   if (!totalPrice || Number(totalPrice) <= 0) {
     throw new AppError(400, "Total price must be greater than zero");
   }
-  const bookingDate = new Date(scheduledDate);
-  if (isNaN(bookingDate.getTime())) {
+  const bookingStart = new Date(scheduledDate);
+  if (isNaN(bookingStart.getTime())) {
     throw new AppError(400, "Invalid scheduled date format");
   }
-  if (bookingDate < /* @__PURE__ */ new Date()) {
+  if (bookingStart < /* @__PURE__ */ new Date()) {
     throw new AppError(400, "You cannot book a session in the past");
   }
+  const bookingEnd = new Date(
+    bookingStart.getTime() + duration * 60 * 1e3
+  );
   const tutorProfile = await prisma.tutorProfile.findUnique({
     where: { id: tutorProfileId }
   });
@@ -1553,10 +1556,12 @@ var createBooking = async (studentId, payload) => {
   if (!category) {
     throw new AppError(404, "Category not found");
   }
-  const tutorCategory = await prisma.tutorCategory.findFirst({
+  const tutorCategory = await prisma.tutorCategory.findUnique({
     where: {
-      tutorProfileId,
-      categoryId: Number(categoryId)
+      tutorProfileId_categoryId: {
+        tutorProfileId,
+        categoryId: Number(categoryId)
+      }
     }
   });
   if (!tutorCategory) {
@@ -1565,42 +1570,53 @@ var createBooking = async (studentId, payload) => {
       "This tutor does not provide sessions for this category"
     );
   }
-  const bookingDay = bookingDate.toLocaleString("en-US", { weekday: "long" }).toUpperCase();
-  const bookingTimeInMinutes = bookingDate.getHours() * 60 + bookingDate.getMinutes();
+  const bookingDay = bookingStart.toLocaleString("en-US", { weekday: "long", timeZone: "UTC" }).toUpperCase();
+  const bookingStartMinutes = bookingStart.getUTCHours() * 60 + bookingStart.getUTCMinutes();
   const availability = await prisma.availability.findMany({
-    where: { tutorProfileId }
+    where: { tutorProfileId, isActive: true }
   });
   if (!availability.length) {
     throw new AppError(404, "No availability set for this tutor");
   }
-  const isAvailable = availability.some((avail) => {
-    if (!avail.startTime || !avail.endTime) return false;
+  const fitsAvailability = availability.some((avail) => {
     if (avail.dayOfWeek !== bookingDay) return false;
     const [startHour, startMinute] = avail.startTime.split(":").map(Number);
     const [endHour, endMinute] = avail.endTime.split(":").map(Number);
-    const startTimeInMinutes = startHour * 60 + startMinute;
-    const endTimeInMinutes = endHour * 60 + endMinute;
-    return bookingTimeInMinutes >= startTimeInMinutes && bookingTimeInMinutes + duration * 60 <= endTimeInMinutes;
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+    return bookingStartMinutes >= startMinutes && bookingStartMinutes + duration <= endMinutes;
   });
-  if (!isAvailable) {
-    throw new AppError(400, "The selected time is outside the tutor's availability");
-  }
-  const existingBooking = await prisma.booking.findFirst({
-    where: {
-      tutorProfileId,
-      scheduledDate: bookingDate
-    }
-  });
-  if (existingBooking?.studentId === studentId) {
+  if (!fitsAvailability) {
     throw new AppError(
-      409,
-      "You already have a booking at the selected time"
+      400,
+      "The selected time is outside the tutor's availability"
     );
   }
-  if (existingBooking) {
+  const dayStart = new Date(bookingStart);
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const dayEnd = new Date(bookingStart);
+  dayEnd.setUTCHours(23, 59, 59, 999);
+  const existingBookings = await prisma.booking.findMany({
+    where: {
+      tutorProfileId,
+      scheduledDate: {
+        gte: dayStart,
+        lte: dayEnd
+      },
+      status: { not: "CANCELLED" }
+    }
+  });
+  const hasOverlap = existingBookings.some((existing) => {
+    const existingStart = existing.scheduledDate;
+    const existingEnd = new Date(
+      existingStart.getTime() + existing.duration * 60 * 1e3
+    );
+    return bookingStart < existingEnd && bookingEnd > existingStart;
+  });
+  if (hasOverlap) {
     throw new AppError(
       409,
-      "This tutor already has a booking at the selected time"
+      "This time slot is already booked. Please choose another available time."
     );
   }
   const booking = await prisma.booking.create({
@@ -1608,7 +1624,7 @@ var createBooking = async (studentId, payload) => {
       studentId,
       tutorProfileId,
       categoryId,
-      scheduledDate: bookingDate,
+      scheduledDate: bookingStart,
       duration,
       totalPrice,
       notes: notes || null,
@@ -2050,8 +2066,8 @@ import express6 from "express";
 // src/module/review/review.services.ts
 import httpStatus4 from "http-status";
 var createReview = async (payload) => {
-  const { bookingId, studentId, tutorProfileId, rating, comment } = payload;
-  if (!bookingId || !studentId || !tutorProfileId || !rating) {
+  const { categoryId, studentId, tutorProfileId, rating, comment } = payload;
+  if (!categoryId || !studentId || !tutorProfileId || !rating) {
     throw new AppError(
       httpStatus4.BAD_REQUEST,
       "bookingId, studentId, tutorProfileId, and rating are required"
@@ -2063,30 +2079,6 @@ var createReview = async (payload) => {
       "Rating must be between 1 and 5"
     );
   }
-  const booking = await prisma.booking.findUnique({
-    where: { id: bookingId }
-  });
-  if (!booking) {
-    throw new AppError(
-      httpStatus4.NOT_FOUND,
-      "Booking not found"
-    );
-  }
-  if (booking.studentId !== studentId) {
-    throw new AppError(
-      httpStatus4.FORBIDDEN,
-      "You can only review bookings you made"
-    );
-  }
-  const existingReview = await prisma.review.findUnique({
-    where: { bookingId }
-  });
-  if (existingReview) {
-    throw new AppError(
-      httpStatus4.CONFLICT,
-      "A review for this booking already exists"
-    );
-  }
   const tutor = await prisma.tutorProfile.findUnique({
     where: { id: tutorProfileId }
   });
@@ -2096,9 +2088,27 @@ var createReview = async (payload) => {
       "Tutor profile not found"
     );
   }
+  const booking = await prisma.booking.findFirst({
+    where: { studentId, tutorProfileId }
+  });
+  if (!booking) {
+    throw new AppError(
+      httpStatus4.NOT_FOUND,
+      "You've not made a booking with this tutor"
+    );
+  }
+  const existingReview = await prisma.review.findFirst({
+    where: { studentId, tutorProfileId }
+  });
+  if (existingReview) {
+    throw new AppError(
+      httpStatus4.CONFLICT,
+      "You've already reviewed this tutor"
+    );
+  }
   const review = await prisma.review.create({
     data: {
-      bookingId,
+      bookingId: booking.id,
       studentId,
       tutorProfileId,
       rating,
