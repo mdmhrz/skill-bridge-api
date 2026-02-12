@@ -3,15 +3,13 @@ import { AppError } from "../../utils/error";
 import httpStatus from "http-status";
 import { Review } from "../../../generated/prisma/client";
 
-type ReviewWithoutBooking = Omit<Review, 'bookingId'> & {
-    categoryId: string
-}
+type ReviewWithoutBooking = Omit<Review, 'bookingId'>
 
 const createReview = async (payload: ReviewWithoutBooking) => {
-    const { categoryId, studentId, tutorProfileId, rating, comment } = payload;
+    const { studentId, tutorProfileId, rating, comment } = payload;
 
     // Required fields
-    if (!categoryId || !studentId || !tutorProfileId || !rating) {
+    if (!studentId || !tutorProfileId || !rating) {
         throw new AppError(
             httpStatus.BAD_REQUEST,
             "bookingId, studentId, tutorProfileId, and rating are required"

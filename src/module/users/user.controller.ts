@@ -81,6 +81,57 @@ const getUsers = async (req: Request, res: Response) => {
     }
 };
 
+
+const getUserById = async (req: Request, res: Response) => {
+    try {
+        const requestingUser = req.user;
+        const { id } = req.params;
+
+        // Authentication Check
+        if (!requestingUser) {
+            throw new AppError(
+                httpStatus.UNAUTHORIZED,
+                "Authentication required. Please login."
+            );
+        }
+
+        // Validation
+        if (!id || typeof id !== "string") {
+            throw new AppError(
+                httpStatus.BAD_REQUEST,
+                "Valid user ID is required."
+            );
+        }
+
+
+        const result = await userServices.getUserById(requestingUser, id);
+
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: result.message,
+            data: result.data,
+        });
+
+    } catch (error: any) {
+        if (error instanceof AppError) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
+        console.error("Get user error:", error);
+
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: "Something went wrong while retrieving the user.",
+        });
+    }
+};
+
+
+
+
 export const userController = {
-    getUsers,
+    getUsers, getUserById
 };
