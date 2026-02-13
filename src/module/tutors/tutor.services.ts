@@ -1,4 +1,4 @@
-import { TutorProfile } from "../../../generated/prisma/client"
+import { Prisma, TutorProfile } from "../../../generated/prisma/client"
 import { UserRole } from "../../enums/user.role.enum";
 import { prisma } from "../../lib/prisma"
 import paginationSortingHelper, { IOptions } from "../../utils/paginationSortingHelper";
@@ -165,90 +165,103 @@ const getAllTutors = async (options: GetTutorFilters = {}) => {
 
 
 // get tutor by id
-const getTutorById = async (id: string) => {
-    return await prisma.tutorProfile.findUnique({
-        where: { id },
 
-        include: {
-            // about tutor
-            user: {
+const tutorIncludeConfig = {
+    // Basic tutor user info
+    user: {
+        select: {
+            name: true,
+            email: true,
+        },
+    },
+
+    // Tutor categories
+    categories: {
+        select: {
+            category: {
                 select: {
+                    id: true,
                     name: true,
-                    email: true,
-                },
-            },
-
-            // tutor categories
-            categories: {
-                select: {
-                    category: {
-                        select: {
-                            id: true,
-                            name: true,
-                            description: true,
-                        },
-                    },
-                },
-            },
-
-            // about tutor availability
-            availability: {
-                select: {
-                    id: true,
-                    dayOfWeek: true,
-                    startTime: true,
-                    endTime: true,
-                },
-            },
-
-            // tutor bookings
-            // bookings: {
-            //     select: {
-            //         id: true,
-            //         scheduledDate: true,
-            //         student: {
-            //             select: {
-            //                 id: true,
-            //                 name: true,
-            //                 email: true,
-            //                 image: true
-            //             },
-            //         },
-            //     },
-            // },
-
-            // last 5 reviews with details
-            reviews: {
-                orderBy: {
-                    createdAt: "desc",
-                },
-                take: 5,
-                select: {
-                    id: true,
-                    rating: true,
-                    comment: true,
-                    student: {
-                        select: {
-                            id: true,
-                            name: true,
-                            email: true,
-                            image: true
-                        },
-                    },
-                }
-
-            },
-
-
-            // total review count
-            _count: {
-                select: {
-                    reviews: true,
-                    bookings: true,
-                    availability: true
+                    description: true,
                 },
             },
         },
+    },
+
+    // Tutor availability
+    availability: {
+        select: {
+            id: true,
+            dayOfWeek: true,
+            startTime: true,
+            endTime: true,
+        },
+    },
+
+    // Tutor bookings
+    bookings: {
+        select: {
+            id: true,
+            scheduledDate: true,
+            student: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    image: true,
+                },
+            },
+        },
+    },
+
+    // Latest 5 reviews
+    reviews: {
+        orderBy: {
+            createdAt: "desc",
+        },
+        take: 5,
+        select: {
+            id: true,
+            rating: true,
+            comment: true,
+            student: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    image: true,
+                },
+            },
+        },
+    },
+
+    // Counts
+    _count: {
+        select: {
+            reviews: true,
+            bookings: true,
+            availability: true,
+        },
+    },
+} satisfies Prisma.TutorProfileInclude;
+
+
+
+
+
+const getTutorById = async (id: string) => {
+    return await prisma.tutorProfile.findUnique({
+        where: { id },
+        include: tutorIncludeConfig
+    })
+}
+
+const getTutorOwnProfile = async (userId: string) => {
+    console.log(userId)
+
+    return await prisma.tutorProfile.findUnique({
+        where: { userId },
+        include: tutorIncludeConfig
     })
 }
 
@@ -405,5 +418,6 @@ export const tutorServices = {
     getAllTutors,
     getTutorById,
     updateTutorProfile,
-    deleteTutorProfile
+    deleteTutorProfile,
+    getTutorOwnProfile
 }

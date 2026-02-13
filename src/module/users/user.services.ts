@@ -91,6 +91,16 @@ const getUserById = async (
     // Fetch user
     const user = await prisma.user.findUnique({
         where: { id },
+        include: {
+            studentBookings: true,
+            reviews: true,
+            _count: {
+                select: {
+                    studentBookings: true,
+                    reviews: true,
+                },
+            },
+        },
     });
 
     if (!user) {
@@ -105,6 +115,9 @@ const getUserById = async (
         data: user,
     };
 };
+
+
+
 export const userServices = {
     getUsers, getUserById
 };
