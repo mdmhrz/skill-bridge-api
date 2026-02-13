@@ -168,12 +168,7 @@ const getAllTutors = async (options: GetTutorFilters = {}) => {
 
 const tutorIncludeConfig = {
     // Basic tutor user info
-    user: {
-        select: {
-            name: true,
-            email: true,
-        },
-    },
+    user: true,
 
     // Tutor categories
     categories: {
