@@ -870,82 +870,85 @@ var getAllTutors = async (options = {}) => {
     }
   };
 };
-var getTutorById = async (id) => {
-  return await prisma.tutorProfile.findUnique({
-    where: { id },
-    include: {
-      // about tutor
-      user: {
+var tutorIncludeConfig = {
+  // Basic tutor user info
+  user: true,
+  // Tutor categories
+  categories: {
+    select: {
+      category: {
         select: {
+          id: true,
           name: true,
-          email: true
-        }
-      },
-      // tutor categories
-      categories: {
-        select: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-              description: true
-            }
-          }
-        }
-      },
-      // about tutor availability
-      availability: {
-        select: {
-          id: true,
-          dayOfWeek: true,
-          startTime: true,
-          endTime: true
-        }
-      },
-      // tutor bookings
-      // bookings: {
-      //     select: {
-      //         id: true,
-      //         scheduledDate: true,
-      //         student: {
-      //             select: {
-      //                 id: true,
-      //                 name: true,
-      //                 email: true,
-      //                 image: true
-      //             },
-      //         },
-      //     },
-      // },
-      // last 5 reviews with details
-      reviews: {
-        orderBy: {
-          createdAt: "desc"
-        },
-        take: 5,
-        select: {
-          id: true,
-          rating: true,
-          comment: true,
-          student: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true
-            }
-          }
-        }
-      },
-      // total review count
-      _count: {
-        select: {
-          reviews: true,
-          bookings: true,
-          availability: true
+          description: true
         }
       }
     }
+  },
+  // Tutor availability
+  availability: {
+    select: {
+      id: true,
+      dayOfWeek: true,
+      startTime: true,
+      endTime: true
+    }
+  },
+  // Tutor bookings
+  bookings: {
+    select: {
+      id: true,
+      scheduledDate: true,
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true
+        }
+      }
+    }
+  },
+  // Latest 5 reviews
+  reviews: {
+    orderBy: {
+      createdAt: "desc"
+    },
+    take: 5,
+    select: {
+      id: true,
+      rating: true,
+      comment: true,
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true
+        }
+      }
+    }
+  },
+  // Counts
+  _count: {
+    select: {
+      reviews: true,
+      bookings: true,
+      availability: true
+    }
+  }
+};
+var getTutorById = async (id) => {
+  return await prisma.tutorProfile.findUnique({
+    where: { id },
+    include: tutorIncludeConfig
+  });
+};
+var getTutorOwnProfile = async (userId) => {
+  console.log(userId);
+  return await prisma.tutorProfile.findUnique({
+    where: { userId },
+    include: tutorIncludeConfig
   });
 };
 var updateTutorProfile = async (userId, payload) => {
@@ -1040,7 +1043,8 @@ var tutorServices = {
   getAllTutors,
   getTutorById,
   updateTutorProfile,
-  deleteTutorProfile
+  deleteTutorProfile,
+  getTutorOwnProfile
 };
 
 // src/utils/error.ts
@@ -1176,6 +1180,33 @@ var getTutorById2 = async (req, res) => {
       });
     }
     const result = await tutorServices.getTutorById(id);
+    if (!result) {
+      return res.status(404).json({
+        message: "Tutor profile not found --"
+      });
+    }
+    return res.status(200).json({
+      message: "Tutor profile retrieved successfully",
+      data: result
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to retrieve tutor profile",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+};
+var getTutorOwnProfile2 = async (req, res) => {
+  try {
+    const user = req.user;
+    console.log(user);
+    if (!user || !user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: user not authenticated"
+      });
+    }
+    const result = await tutorServices.getTutorOwnProfile(user.id);
     if (!result) {
       return res.status(404).json({
         message: "Tutor profile not found"
@@ -1321,7 +1352,8 @@ var tutorController = {
   getAllTutor,
   getTutorById: getTutorById2,
   updateTutorProfile: updateTutorProfile2,
-  deleteTutorProfile: deleteTutorProfile2
+  deleteTutorProfile: deleteTutorProfile2,
+  getTutorOwnProfile: getTutorOwnProfile2
 };
 
 // src/middleware/auth.ts
@@ -1368,6 +1400,7 @@ var auth_default = auth2;
 var router = express.Router();
 router.post("/", auth_default("STUDENT" /* STUDENT */), tutorController.createTutorProfile);
 router.get("/", tutorController.getAllTutor);
+router.get("/my-profile", auth_default("TUTOR" /* TUTOR */), tutorController.getTutorOwnProfile);
 router.get("/:id", tutorController.getTutorById);
 router.put("/", auth_default("TUTOR" /* TUTOR */), tutorController.updateTutorProfile);
 router.delete("/", auth_default("TUTOR" /* TUTOR */), tutorController.deleteTutorProfile);
@@ -2066,8 +2099,8 @@ import express6 from "express";
 // src/module/review/review.services.ts
 import httpStatus4 from "http-status";
 var createReview = async (payload) => {
-  const { categoryId, studentId, tutorProfileId, rating, comment } = payload;
-  if (!categoryId || !studentId || !tutorProfileId || !rating) {
+  const { studentId, tutorProfileId, rating, comment } = payload;
+  if (!studentId || !tutorProfileId || !rating) {
     throw new AppError(
       httpStatus4.BAD_REQUEST,
       "bookingId, studentId, tutorProfileId, and rating are required"
@@ -2316,6 +2349,7 @@ var reviewRoutes = router6;
 import express7 from "express";
 
 // src/module/users/user.services.ts
+import httpStatus6 from "http-status";
 var getUsers = async (options = {}) => {
   const { page, limit, skip, sortBy, sortOrder } = paginationSortingHelper_default(options);
   const where = {};
@@ -2360,20 +2394,54 @@ var getUsers = async (options = {}) => {
     }
   };
 };
+var getUserById = async (requestingUser, id) => {
+  const isOwner = requestingUser.id === id;
+  const isAdmin = requestingUser.role === "ADMIN" /* ADMIN */;
+  if (!isOwner && !isAdmin) {
+    throw new AppError(
+      httpStatus6.FORBIDDEN,
+      "You are not authorized to access this user's information."
+    );
+  }
+  const user = await prisma.user.findUnique({
+    where: { id },
+    include: {
+      studentBookings: true,
+      reviews: true,
+      _count: {
+        select: {
+          studentBookings: true,
+          reviews: true
+        }
+      }
+    }
+  });
+  if (!user) {
+    throw new AppError(
+      httpStatus6.NOT_FOUND,
+      "User not found."
+    );
+  }
+  return {
+    message: "User retrieved successfully.",
+    data: user
+  };
+};
 var userServices = {
-  getUsers
+  getUsers,
+  getUserById
 };
 
 // src/module/users/user.controller.ts
-import httpStatus6 from "http-status";
+import httpStatus7 from "http-status";
 var getUsers2 = async (req, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
-      throw new AppError(httpStatus6.UNAUTHORIZED, "Unauthorized access");
+      throw new AppError(httpStatus7.UNAUTHORIZED, "Unauthorized access");
     }
     if (user.role !== "ADMIN") {
-      throw new AppError(httpStatus6.FORBIDDEN, "Access denied: Admins only");
+      throw new AppError(httpStatus7.FORBIDDEN, "Access denied: Admins only");
     }
     const paginationOptions = paginationSortingHelper_default({
       ...typeof req.query.page === "string" ? { page: Number(req.query.page) } : {},
@@ -2385,7 +2453,7 @@ var getUsers2 = async (req, res) => {
     if (typeof req.query.role === "string") {
       const role = req.query.role.toLowerCase();
       if (!["student", "admin", "tutor"].includes(role)) {
-        throw new AppError(httpStatus6.BAD_REQUEST, "Invalid user role");
+        throw new AppError(httpStatus7.BAD_REQUEST, "Invalid user role");
       }
       filters.role = role.toUpperCase();
     }
@@ -2399,7 +2467,7 @@ var getUsers2 = async (req, res) => {
       ...paginationOptions,
       ...filters
     });
-    res.status(httpStatus6.OK).json({
+    res.status(httpStatus7.OK).json({
       success: true,
       message: result.message,
       data: result.data,
@@ -2413,20 +2481,58 @@ var getUsers2 = async (req, res) => {
       });
     }
     console.error("Get users error:", error);
-    return res.status(httpStatus6.INTERNAL_SERVER_ERROR).json({
+    return res.status(httpStatus7.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to retrieve users",
       error: error instanceof Error ? error.message : String(error)
     });
   }
 };
+var getUserById2 = async (req, res) => {
+  try {
+    const requestingUser = req.user;
+    const { id } = req.params;
+    if (!requestingUser) {
+      throw new AppError(
+        httpStatus7.UNAUTHORIZED,
+        "Authentication required. Please login."
+      );
+    }
+    if (!id || typeof id !== "string") {
+      throw new AppError(
+        httpStatus7.BAD_REQUEST,
+        "Valid user ID is required."
+      );
+    }
+    const result = await userServices.getUserById(requestingUser, id);
+    return res.status(httpStatus7.OK).json({
+      success: true,
+      message: result.message,
+      data: result.data
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Get user error:", error);
+    return res.status(httpStatus7.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Something went wrong while retrieving the user."
+    });
+  }
+};
 var userController = {
-  getUsers: getUsers2
+  getUsers: getUsers2,
+  getUserById: getUserById2
 };
 
 // src/module/users/user.route.ts
 var router7 = express7.Router();
 router7.get("/", auth_default("ADMIN" /* ADMIN */), userController.getUsers);
+router7.get("/:id", auth_default("ADMIN" /* ADMIN */, "STUDENT" /* STUDENT */), userController.getUserById);
 var userRoutes = router7;
 
 // src/app.ts
