@@ -536,22 +536,21 @@ var auth = betterAuth({
     // or "mysql", "postgresql", ...etc
   }),
   trustedOrigins: [process.env.APP_URL, process.env.PROD_APP_URL],
-  session: {
-    cookieCache: {
-      enabled: true,
-      maxAge: 5 * 60 * 60 * 24
-      // 5 days 
-    }
-  },
-  advanced: {
-    cookiePrefix: "better-auth",
-    useSecureCookies: process.env.NODE_ENV === "production",
-    sameSite: "none",
-    crossSubDomainCookies: {
-      enabled: true
-    },
-    disableCSRFCheck: true
-  },
+  // session: {
+  //   cookieCache: {
+  //     enabled: true,
+  //     maxAge: 5 * 60 * 60 * 24, // 5 days 
+  //   },
+  // },
+  // advanced: {
+  //   cookiePrefix: "better-auth",
+  //   useSecureCookies: process.env.NODE_ENV === "production",
+  //   sameSite: "none",
+  //   crossSubDomainCookies: {
+  //     enabled: true,
+  //   },
+  //   disableCSRFCheck: true,
+  // },
   user: {
     additionalFields: {
       role: {
