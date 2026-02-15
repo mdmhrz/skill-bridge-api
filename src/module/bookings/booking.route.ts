@@ -9,6 +9,7 @@ const router = express.Router();
 // router.get("/");
 router.post("/", auth(UserRole.STUDENT), bookingController.createBooking);
 router.get("/", auth(UserRole.STUDENT, UserRole.ADMIN), bookingController.getStudentBookings);
+router.get("/all", auth(UserRole.ADMIN), bookingController.getAllBookings)
 router.get('/:id', auth(UserRole.STUDENT, UserRole.ADMIN), bookingController.getBookingById);
 
 

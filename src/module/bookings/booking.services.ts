@@ -254,6 +254,52 @@ const getStudentBookings = async (studentId: string) => {
 };
 
 
+
+const getAllBookings = async () => {
+
+
+    //  fetch bookings 
+    const allBookings = await prisma.booking.findMany({
+        orderBy: {
+            scheduledDate: "desc",
+        },
+        include: {
+            student: {
+                select: {
+                    id: true,
+                    name: true,
+                    image: true,
+                    phone: true
+                },
+            },
+            tutorProfile: {
+                select: {
+                    id: true,
+                    user: {
+                        select: {
+                            name: true,
+                            email: true,
+                            image: true,
+                            phone: true
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    //  no bookings 
+    if (!allBookings || allBookings.length === 0) {
+        throw new AppError(404, "No bookings found for this student");
+    }
+
+    return {
+        message: "Bookings retrieved successfully",
+        allBookings,
+    };
+};
+
+
 const getBookingById = async (studentId: string, bookingId: string) => {
     // auth validation
     if (!studentId) {
@@ -308,5 +354,5 @@ const getBookingById = async (studentId: string, bookingId: string) => {
 
 
 export const bookingServices = {
-    createBooking, getStudentBookings, getBookingById
+    createBooking, getStudentBookings, getBookingById, getAllBookings
 }

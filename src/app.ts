@@ -24,6 +24,7 @@ const allowedOrigins = [
     process.env.PROD_APP_URL, //Frontend production url
 ].filter(Boolean);
 
+app.set('trust proxy', true)
 
 app.use(
     cors({

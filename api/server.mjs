@@ -1709,6 +1709,43 @@ var getStudentBookings = async (studentId) => {
     studentBookings
   };
 };
+var getAllBookings = async () => {
+  const allBookings = await prisma.booking.findMany({
+    orderBy: {
+      scheduledDate: "desc"
+    },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          phone: true
+        }
+      },
+      tutorProfile: {
+        select: {
+          id: true,
+          user: {
+            select: {
+              name: true,
+              email: true,
+              image: true,
+              phone: true
+            }
+          }
+        }
+      }
+    }
+  });
+  if (!allBookings || allBookings.length === 0) {
+    throw new AppError(404, "No bookings found for this student");
+  }
+  return {
+    message: "Bookings retrieved successfully",
+    allBookings
+  };
+};
 var getBookingById = async (studentId, bookingId) => {
   if (!studentId) {
     throw new AppError(401, "Unauthorized user");
@@ -1753,7 +1790,8 @@ var getBookingById = async (studentId, bookingId) => {
 var bookingServices = {
   createBooking,
   getStudentBookings,
-  getBookingById
+  getBookingById,
+  getAllBookings
 };
 
 // src/module/bookings/booking.controller.ts
@@ -1815,6 +1853,28 @@ var getStudentBookings2 = async (req, res) => {
     });
   }
 };
+var getAllBookings2 = async (req, res) => {
+  try {
+    const result = await bookingServices.getAllBookings();
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result.allBookings
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Get student bookings error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
 var getBookingById2 = async (req, res) => {
   try {
     const user = req.user;
@@ -1853,13 +1913,15 @@ var getBookingById2 = async (req, res) => {
 var bookingController = {
   createBooking: createBooking2,
   getStudentBookings: getStudentBookings2,
-  getBookingById: getBookingById2
+  getBookingById: getBookingById2,
+  getAllBookings: getAllBookings2
 };
 
 // src/module/bookings/booking.route.ts
 var router4 = express4.Router();
 router4.post("/", auth_default("STUDENT" /* STUDENT */), bookingController.createBooking);
 router4.get("/", auth_default("STUDENT" /* STUDENT */, "ADMIN" /* ADMIN */), bookingController.getStudentBookings);
+router4.get("/all", auth_default("ADMIN" /* ADMIN */), bookingController.getAllBookings);
 router4.get("/:id", auth_default("STUDENT" /* STUDENT */, "ADMIN" /* ADMIN */), bookingController.getBookingById);
 var bookingRoutes = router4;
 
@@ -2542,6 +2604,7 @@ var allowedOrigins = [
   process.env.PROD_APP_URL
   //Frontend production url
 ].filter(Boolean);
+app.set("trust proxy", true);
 app.use(
   cors({
     origin: (origin, callback) => {
