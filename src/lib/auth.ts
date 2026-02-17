@@ -25,7 +25,6 @@ export const auth = betterAuth({
     "https://skill-bridge-client-server.vercel.app"
   ],
 
-
   // session: {
   //   cookieCache: {
   //     enabled: true,
