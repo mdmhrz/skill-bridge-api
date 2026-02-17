@@ -15,12 +15,16 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-
+console.log("Trusted:", process.env.APP_URL)
+console.log("Trusted Prod:", process.env.PROD_APP_URL)
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql", // or "mysql", "postgresql", ...etc
   }),
-  trustedOrigins: [process.env.APP_URL!, process.env.PROD_APP_URL!],
+  trustedOrigins: [
+    "https://skill-bridge-client-server.vercel.app"
+  ],
+
   // session: {
   //   cookieCache: {
   //     enabled: true,
@@ -36,7 +40,10 @@ export const auth = betterAuth({
   //   },
   //   disableCSRFCheck: true,
   // },
-
+  advanced: {
+    useSecureCookies: true,
+    sameSite: "none",
+  },
 
 
   user: {
