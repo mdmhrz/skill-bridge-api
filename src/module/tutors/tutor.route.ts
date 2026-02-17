@@ -6,8 +6,9 @@ import { UserRole } from "../../enums/user.role.enum";
 const router = express.Router();
 
 router.post('/', auth(UserRole.STUDENT), tutorController.createTutorProfile);
-router.get("/", tutorController.getAllTutor); //to do: only ifVerified profile will be shown
+router.get("/", tutorController.getAllTutor);
 router.get('/my-profile', auth(UserRole.TUTOR), tutorController.getTutorOwnProfile)
+router.get('/featured', tutorController.featuredTutors)
 router.get("/:id", tutorController.getTutorById);
 router.put("/", auth(UserRole.TUTOR), tutorController.updateTutorProfile);
 router.delete("/", auth(UserRole.TUTOR), tutorController.deleteTutorProfile);

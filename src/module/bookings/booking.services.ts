@@ -21,9 +21,8 @@ const createBooking = async (studentId: string, payload: Booking) => {
         meetingLink,
     } = payload;
 
-    // ----------------------------
-    // 1. Basic field validation
-    // ----------------------------
+
+    // Basic field validation   
     if (!tutorProfileId) {
         throw new AppError(400, "Tutor profile ID is required");
     }
@@ -44,9 +43,8 @@ const createBooking = async (studentId: string, payload: Booking) => {
         throw new AppError(400, "Total price must be greater than zero");
     }
 
-    // ----------------------------
-    // 2. Date validation (UTC-safe)
-    // ----------------------------
+
+    // Date validation (UTC-safe)   
     const bookingStart = new Date(scheduledDate);
 
     if (isNaN(bookingStart.getTime())) {
@@ -61,9 +59,8 @@ const createBooking = async (studentId: string, payload: Booking) => {
         bookingStart.getTime() + duration * 60 * 1000
     );
 
-    // ----------------------------
-    // 3. Tutor profile validation
-    // ----------------------------
+
+    // Tutor profile validation   
     const tutorProfile = await prisma.tutorProfile.findUnique({
         where: { id: tutorProfileId },
     });
@@ -72,9 +69,8 @@ const createBooking = async (studentId: string, payload: Booking) => {
         throw new AppError(404, "Tutor profile not found");
     }
 
-    // ----------------------------
-    // 4. Category validation
-    // ----------------------------
+
+    // Category validation   
     const category = await prisma.category.findUnique({
         where: { id: Number(categoryId) },
     });
@@ -83,9 +79,9 @@ const createBooking = async (studentId: string, payload: Booking) => {
         throw new AppError(404, "Category not found");
     }
 
-    // ----------------------------
-    // 5. Tutor–category validation
-    // ----------------------------
+
+    // Tutor–category validation
+
     const tutorCategory = await prisma.tutorCategory.findUnique({
         where: {
             tutorProfileId_categoryId: {
@@ -102,9 +98,8 @@ const createBooking = async (studentId: string, payload: Booking) => {
         );
     }
 
-    // ----------------------------
-    // 6. Availability validation
-    // ----------------------------
+
+    // Availability validation   
     const bookingDay = bookingStart
         .toLocaleString("en-US", { weekday: "long", timeZone: "UTC" })
         .toUpperCase();
@@ -142,9 +137,8 @@ const createBooking = async (studentId: string, payload: Booking) => {
         );
     }
 
-    // ----------------------------
-    // 7. Overlapping booking check (CRITICAL)
-    // ----------------------------
+
+    // Overlapping booking check (CRITICAL)
     const dayStart = new Date(bookingStart);
     dayStart.setUTCHours(0, 0, 0, 0);
 
@@ -181,9 +175,8 @@ const createBooking = async (studentId: string, payload: Booking) => {
         );
     }
 
-    // ----------------------------
-    // 8. Create booking
-    // ----------------------------
+
+    // Create booking    
     const booking = await prisma.booking.create({
         data: {
             studentId,

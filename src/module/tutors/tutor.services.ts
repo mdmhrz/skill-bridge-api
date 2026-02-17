@@ -165,7 +165,6 @@ const getAllTutors = async (options: GetTutorFilters = {}) => {
 
 
 // get tutor by id
-
 const tutorIncludeConfig = {
     // Basic tutor user info
     user: true,
@@ -241,9 +240,6 @@ const tutorIncludeConfig = {
 } satisfies Prisma.TutorProfileInclude;
 
 
-
-
-
 const getTutorById = async (id: string) => {
     return await prisma.tutorProfile.findUnique({
         where: { id },
@@ -265,7 +261,6 @@ const getTutorOwnProfile = async (userId: string) => {
 
 
 // update totor profile
-
 
 export type UpdateTutorProfileDTO = {
     // Tutor profile fields
@@ -404,6 +399,52 @@ const deleteTutorProfile = async (userId: string) => {
 };
 
 
+const featuredTutors = async () => {
+    const tutors = await prisma.tutorProfile.findMany({
+        take: 6,
+
+        // initially its being commented, because yet i did not created tutors profile perfectly
+        // where: {
+        //     availability: {
+        //         some: {}, // at least 1 availability
+        //     },
+        //     // user: {
+        //     //     status: "ACTIVE",
+        //     //     isBanned: false,
+        //     // },
+        // },
+
+
+        orderBy: [
+            { rating: "desc" },
+            { totalReviews: "desc" },
+            { experience: "desc" },
+            { hourlyRate: "asc" },
+        ],
+        include: {
+            user: true,
+            categories: {
+                include: {
+                    category: true,
+                },
+            },
+            availability: true,
+            _count: {
+                select: {
+                    reviews: true,
+                    bookings: true,
+                },
+            },
+        },
+    })
+
+    return {
+        message: 'Featured tutors retrive successfully',
+        data: tutors
+    }
+}
+
+
 
 
 
@@ -414,5 +455,6 @@ export const tutorServices = {
     getTutorById,
     updateTutorProfile,
     deleteTutorProfile,
-    getTutorOwnProfile
+    getTutorOwnProfile,
+    featuredTutors
 }
