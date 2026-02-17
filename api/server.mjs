@@ -546,15 +546,6 @@ var auth = betterAuth({
   //     maxAge: 5 * 60 * 60 * 24, // 5 days 
   //   },
   // },
-  // advanced: {
-  //   cookiePrefix: "better-auth",
-  //   useSecureCookies: process.env.NODE_ENV === "production",
-  //   sameSite: "none",
-  //   crossSubDomainCookies: {
-  //     enabled: true,
-  //   },
-  //   disableCSRFCheck: true,
-  // },
   advanced: {
     useSecureCookies: true,
     sameSite: "none"
@@ -753,7 +744,8 @@ var auth = betterAuth({
       prompt: "select_account consent",
       accessType: "offline",
       clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      redirectTo: process.env.FRONTEND_URL || "https://skill-bridge-client-server.vercel.app"
     }
   }
 });

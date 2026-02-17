@@ -31,15 +31,7 @@ export const auth = betterAuth({
   //     maxAge: 5 * 60 * 60 * 24, // 5 days 
   //   },
   // },
-  // advanced: {
-  //   cookiePrefix: "better-auth",
-  //   useSecureCookies: process.env.NODE_ENV === "production",
-  //   sameSite: "none",
-  //   crossSubDomainCookies: {
-  //     enabled: true,
-  //   },
-  //   disableCSRFCheck: true,
-  // },
+  
   advanced: {
     useSecureCookies: true,
     sameSite: "none",
@@ -248,6 +240,7 @@ export const auth = betterAuth({
       accessType: 'offline',
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      redirectTo: process.env.FRONTEND_URL || "https://skill-bridge-client-server.vercel.app",
     },
   },
 
