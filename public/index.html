@@ -1,366 +1,459 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SkillBridge API</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --black:   #060608;
-      --surface: #0d0d10;
-      --line:    #1c1c22;
-      --muted:   #52525c;
-      --body:    #a1a1aa;
-      --white:   #fafafb;
-      --blue:    #3b7ff5;
-      --blue-dim: rgba(59,127,245,.08);
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkillBridge API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --black: #060608;
+            --surface: #0d0d10;
+            --line: #1c1c22;
+            --muted: #52525c;
+            --body: #a1a1aa;
+            --white: #fafafb;
+            --blue: #3b7ff5;
+            --blue-dim: rgba(59, 127, 245, .08);
+        }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    html { font-size: 16px; }
+        html {
+            font-size: 16px;
+        }
 
-    body {
-      font-family: 'Geist', system-ui, sans-serif;
-      background: var(--black);
-      color: var(--body);
-      min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
-    }
+        body {
+            font-family: 'Geist', system-ui, sans-serif;
+            background: var(--black);
+            color: var(--body);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
 
-    /* ── layout ── */
-    .wrap {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
+        /* ── layout ── */
+        .wrap {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
 
-    /* ── topbar ── */
-    .topbar {
-      border-bottom: 1px solid var(--line);
-      padding: 18px 0;
-    }
-    .topbar .wrap {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .wordmark {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: .8rem;
-      font-weight: 500;
-      color: var(--white);
-      letter-spacing: .04em;
-      text-decoration: none;
-    }
-    .status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: .72rem;
-      color: var(--muted);
-    }
-    .dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: #22c55e;
-      animation: blink 2.4s ease-in-out infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+        /* ── topbar ── */
+        .topbar {
+            border-bottom: 1px solid var(--line);
+            padding: 18px 0;
+        }
 
-    /* ── hero ── */
-    .hero {
-      padding: 96px 0 72px;
-      border-bottom: 1px solid var(--line);
-    }
-    .eyebrow {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: .72rem;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: var(--blue);
-      margin-bottom: 24px;
-    }
-    h1 {
-      font-size: clamp(2.4rem, 5vw, 3.5rem);
-      font-weight: 600;
-      color: var(--white);
-      line-height: 1.1;
-      letter-spacing: -.03em;
-      margin-bottom: 20px;
-    }
-    h1 em {
-      font-style: normal;
-      color: var(--blue);
-    }
-    .lead {
-      font-size: 1.05rem;
-      line-height: 1.7;
-      color: var(--body);
-      max-width: 520px;
-      margin-bottom: 40px;
-    }
-    .cta-row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 9px 18px;
-      border-radius: 6px;
-      font-size: .875rem;
-      font-weight: 500;
-      text-decoration: none;
-      transition: opacity .15s, background .15s;
-      cursor: pointer;
-    }
-    .btn-primary {
-      background: var(--blue);
-      color: #fff;
-    }
-    .btn-primary:hover { opacity: .88; }
-    .btn-ghost {
-      background: transparent;
-      color: var(--body);
-      border: 1px solid var(--line);
-    }
-    .btn-ghost:hover { border-color: var(--muted); color: var(--white); }
+        .topbar .wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-    /* ── section ── */
-    .section {
-      padding: 64px 0;
-      border-bottom: 1px solid var(--line);
-    }
-    .section:last-of-type { border-bottom: none; }
+        .wordmark {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: .8rem;
+            font-weight: 500;
+            color: var(--white);
+            letter-spacing: .04em;
+            text-decoration: none;
+        }
 
-    h2 {
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: var(--white);
-      letter-spacing: -.01em;
-      margin-bottom: 24px;
-    }
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: .72rem;
+            color: var(--muted);
+        }
 
-    /* ── features list ── */
-    .features {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-    .features li {
-      display: grid;
-      grid-template-columns: 140px 1fr;
-      gap: 24px;
-      padding: 18px 0;
-      border-bottom: 1px solid var(--line);
-      align-items: start;
-    }
-    .features li:first-child { border-top: 1px solid var(--line); }
-    .feat-label {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: .78rem;
-      color: var(--muted);
-      padding-top: 2px;
-    }
-    .feat-desc {
-      font-size: .925rem;
-      color: var(--body);
-      line-height: 1.6;
-    }
-    .feat-desc strong {
-      color: var(--white);
-      font-weight: 500;
-    }
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: blink 2.4s ease-in-out infinite;
+        }
 
-    /* ── stack pills ── */
-    .stack {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 4px;
-    }
-    .pill {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: .73rem;
-      padding: 4px 10px;
-      border-radius: 4px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      color: var(--body);
-      transition: border-color .15s, color .15s;
-    }
-    .pill:hover { border-color: var(--blue); color: var(--white); }
+        @keyframes blink {
 
-    /* ── footer ── */
-    footer {
-      padding: 32px 0;
-      border-top: 1px solid var(--line);
-    }
-    footer .wrap {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .footer-note {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: .72rem;
-      color: var(--muted);
-    }
-    .footer-links {
-      display: flex;
-      gap: 20px;
-    }
-    .footer-links a {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: .72rem;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color .15s;
-    }
-    .footer-links a:hover { color: var(--white); }
+            0%,
+            100% {
+                opacity: 1
+            }
 
-    /* ── fade-in on load ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .hero > * {
-      animation: fadeUp .5s ease both;
-    }
-    .hero .eyebrow  { animation-delay: .05s; }
-    .hero h1        { animation-delay: .12s; }
-    .hero .lead     { animation-delay: .2s; }
-    .hero .cta-row  { animation-delay: .28s; }
+            50% {
+                opacity: .35
+            }
+        }
 
-    @media (max-width: 520px) {
-      .features li { grid-template-columns: 1fr; gap: 6px; }
-      footer .wrap { flex-direction: column; align-items: flex-start; }
-    }
-  </style>
+        /* ── hero ── */
+        .hero {
+            padding: 96px 0 72px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: .72rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--blue);
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: clamp(2.4rem, 5vw, 3.5rem);
+            font-weight: 600;
+            color: var(--white);
+            line-height: 1.1;
+            letter-spacing: -.03em;
+            margin-bottom: 20px;
+        }
+
+        h1 em {
+            font-style: normal;
+            color: var(--blue);
+        }
+
+        .lead {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: var(--body);
+            max-width: 520px;
+            margin-bottom: 40px;
+        }
+
+        .cta-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 18px;
+            border-radius: 6px;
+            font-size: .875rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: opacity .15s, background .15s;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--blue);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            opacity: .88;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--body);
+            border: 1px solid var(--line);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--muted);
+            color: var(--white);
+        }
+
+        /* ── section ── */
+        .section {
+            padding: 64px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .section:last-of-type {
+            border-bottom: none;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--white);
+            letter-spacing: -.01em;
+            margin-bottom: 24px;
+        }
+
+        /* ── features list ── */
+        .features {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .features li {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 24px;
+            padding: 18px 0;
+            border-bottom: 1px solid var(--line);
+            align-items: start;
+        }
+
+        .features li:first-child {
+            border-top: 1px solid var(--line);
+        }
+
+        .feat-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: .78rem;
+            color: var(--muted);
+            padding-top: 2px;
+        }
+
+        .feat-desc {
+            font-size: .925rem;
+            color: var(--body);
+            line-height: 1.6;
+        }
+
+        .feat-desc strong {
+            color: var(--white);
+            font-weight: 500;
+        }
+
+        /* ── stack pills ── */
+        .stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .pill {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: .73rem;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            color: var(--body);
+            transition: border-color .15s, color .15s;
+        }
+
+        .pill:hover {
+            border-color: var(--blue);
+            color: var(--white);
+        }
+
+        /* ── footer ── */
+        footer {
+            padding: 32px 0;
+            border-top: 1px solid var(--line);
+        }
+
+        footer .wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .footer-note {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: .72rem;
+            color: var(--muted);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .footer-links a {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: .72rem;
+            color: var(--muted);
+            text-decoration: none;
+            transition: color .15s;
+        }
+
+        .footer-links a:hover {
+            color: var(--white);
+        }
+
+        /* ── fade-in on load ── */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero>* {
+            animation: fadeUp .5s ease both;
+        }
+
+        .hero .eyebrow {
+            animation-delay: .05s;
+        }
+
+        .hero h1 {
+            animation-delay: .12s;
+        }
+
+        .hero .lead {
+            animation-delay: .2s;
+        }
+
+        .hero .cta-row {
+            animation-delay: .28s;
+        }
+
+        @media (max-width: 520px) {
+            .features li {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+
+            footer .wrap {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
+
 <body>
 
-  <!-- ── Top bar ── -->
-  <nav class="topbar">
-    <div class="wrap">
-      <a class="wordmark" href="/">SkillBridge API</a>
-      <div class="status">
-        <span class="dot"></span>
-        operational
-      </div>
-    </div>
-  </nav>
+    <!-- ── Top bar ── -->
+    <nav class="topbar">
+        <div class="wrap">
+            <a class="wordmark" href="/">SkillBridge API</a>
+            <div class="status">
+                <span class="dot"></span>
+                operational
+            </div>
+        </div>
+    </nav>
 
-  <!-- ── Hero ── -->
-  <section class="hero">
-    <div class="wrap">
-      <p class="eyebrow">Backend · v1.0 · 2026</p>
-      <h1>The API behind<br /><em>every session.</em></h1>
-      <p class="lead">
-        SkillBridge API is a production backend connecting students with expert
-        tutors. Authentication, scheduling, bookings, and reviews — all in one
-        RESTful service.
-      </p>
-      <div class="cta-row">
-        <a href="https://skill-bridge-backend-server.vercel.app/" class="btn btn-primary" target="_blank">
-          View Live API ↗
-        </a>
-        <a href="https://github.com/mdmhrz/skill-bridge-api" class="btn btn-ghost" target="_blank">
-          GitHub
-        </a>
-        <a href="./database.html" class="btn btn-ghost">
-          Database Schema
-        </a>
-      </div>
-    </div>
-  </section>
+    <!-- ── Hero ── -->
+    <section class="hero">
+        <div class="wrap">
+            <p class="eyebrow">Backend · v1.0 · 2026</p>
+            <h1>The API behind<br /><em>every session.</em></h1>
+            <p class="lead">
+                SkillBridge API is a production backend connecting students with expert
+                tutors. Authentication, scheduling, bookings, and reviews — all in one
+                RESTful service.
+            </p>
+            <div class="cta-row">
+                <a href="https://skill-bridge-backend-server.vercel.app/" class="btn btn-primary" target="_blank">
+                    View Live API ↗
+                </a>
+                <a href="https://github.com/mdmhrz/skill-bridge-api" class="btn btn-ghost" target="_blank">
+                    GitHub
+                </a>
+                <a href="./database.html" class="btn btn-ghost">
+                    Database Schema
+                </a>
+            </div>
+        </div>
+    </section>
 
-  <!-- ── What it does ── -->
-  <section class="section">
-    <div class="wrap">
-      <h2>What it does</h2>
-      <ul class="features">
-        <li>
-          <span class="feat-label">auth</span>
-          <span class="feat-desc">
-            <strong>Email/password and Google OAuth</strong> via Better Auth.
-            Email verification, JWT sessions, and role-based access control
-            for students, tutors, and admins.
-          </span>
-        </li>
-        <li>
-          <span class="feat-label">tutor profiles</span>
-          <span class="feat-desc">
-            <strong>Rich tutor listings</strong> with bio, hourly rate,
-            categories, languages, education, experience, and manual
-            verification status.
-          </span>
-        </li>
-        <li>
-          <span class="feat-label">scheduling</span>
-          <span class="feat-desc">
-            <strong>Weekly recurring availability slots</strong> with
-            real-time booking, status lifecycle management, and meeting link
-            delivery.
-          </span>
-        </li>
-        <li>
-          <span class="feat-label">reviews</span>
-          <span class="feat-desc">
-            <strong>5-star review system</strong> tied to completed bookings.
-            Aggregated ratings update the tutor profile automatically.
-          </span>
-        </li>
-        <li>
-          <span class="feat-label">search</span>
-          <span class="feat-desc">
-            <strong>Filtered tutor discovery</strong> by subject, language,
-            rating, experience, and availability — with pagination and
-            sort options.
-          </span>
-        </li>
-      </ul>
-    </div>
-  </section>
+    <!-- ── What it does ── -->
+    <section class="section">
+        <div class="wrap">
+            <h2>What it does</h2>
+            <ul class="features">
+                <li>
+                    <span class="feat-label">auth</span>
+                    <span class="feat-desc">
+                        <strong>Email/password and Google OAuth</strong> via Better Auth.
+                        Email verification, JWT sessions, and role-based access control
+                        for students, tutors, and admins.
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-label">tutor profiles</span>
+                    <span class="feat-desc">
+                        <strong>Rich tutor listings</strong> with bio, hourly rate,
+                        categories, languages, education, experience, and manual
+                        verification status.
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-label">scheduling</span>
+                    <span class="feat-desc">
+                        <strong>Weekly recurring availability slots</strong> with
+                        real-time booking, status lifecycle management, and meeting link
+                        delivery.
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-label">reviews</span>
+                    <span class="feat-desc">
+                        <strong>5-star review system</strong> tied to completed bookings.
+                        Aggregated ratings update the tutor profile automatically.
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-label">search</span>
+                    <span class="feat-desc">
+                        <strong>Filtered tutor discovery</strong> by subject, language,
+                        rating, experience, and availability — with pagination and
+                        sort options.
+                    </span>
+                </li>
+            </ul>
+        </div>
+    </section>
 
-  <!-- ── Stack ── -->
-  <section class="section">
-    <div class="wrap">
-      <h2>Stack</h2>
-      <div class="stack">
-        <span class="pill">Node.js 20</span>
-        <span class="pill">TypeScript</span>
-        <span class="pill">Express 5</span>
-        <span class="pill">Prisma</span>
-        <span class="pill">PostgreSQL</span>
-        <span class="pill">Better Auth</span>
-        <span class="pill">JWT</span>
-        <span class="pill">Nodemailer</span>
-        <span class="pill">Vercel</span>
-      </div>
-    </div>
-  </section>
+    <!-- ── Stack ── -->
+    <section class="section">
+        <div class="wrap">
+            <h2>Stack</h2>
+            <div class="stack">
+                <span class="pill">Node.js 20</span>
+                <span class="pill">TypeScript</span>
+                <span class="pill">Express 5</span>
+                <span class="pill">Prisma</span>
+                <span class="pill">PostgreSQL</span>
+                <span class="pill">Better Auth</span>
+                <span class="pill">JWT</span>
+                <span class="pill">Nodemailer</span>
+                <span class="pill">Vercel</span>
+            </div>
+        </div>
+    </section>
 
-  <!-- ── Footer ── -->
-  <footer>
-    <div class="wrap">
-      <span class="footer-note">© 2026 SkillBridge</span>
-      <div class="footer-links">
-        <a href="https://skill-bridge-backend-server.vercel.app/" target="_blank">API</a>
-        <a href="https://github.com/mdmhrz/skill-bridge-api" target="_blank">GitHub</a>
-        <a href="./database.html">Schema</a>
-      </div>
-    </div>
-  </footer>
+    <!-- ── Footer ── -->
+    <footer>
+        <div class="wrap">
+            <span class="footer-note">© 2026 SkillBridge</span>
+            <div class="footer-links">
+                <a href="https://skill-bridge-backend-server.vercel.app/" target="_blank">API</a>
+                <a href="https://github.com/mdmhrz/skill-bridge-api" target="_blank">GitHub</a>
+                <a href="./database.html">Schema</a>
+            </div>
+        </div>
+    </footer>
 
 </body>
+
 </html>
