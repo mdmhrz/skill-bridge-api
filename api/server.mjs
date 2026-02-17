@@ -1037,13 +1037,54 @@ var deleteTutorProfile = async (userId) => {
     throw error;
   }
 };
+var featuredTutors = async () => {
+  const tutors = await prisma.tutorProfile.findMany({
+    take: 6,
+    // initially its being commented, because yet i did not created tutors profile perfectly
+    // where: {
+    //     availability: {
+    //         some: {}, // at least 1 availability
+    //     },
+    //     // user: {
+    //     //     status: "ACTIVE",
+    //     //     isBanned: false,
+    //     // },
+    // },
+    orderBy: [
+      { rating: "desc" },
+      { totalReviews: "desc" },
+      { experience: "desc" },
+      { hourlyRate: "asc" }
+    ],
+    include: {
+      user: true,
+      categories: {
+        include: {
+          category: true
+        }
+      },
+      availability: true,
+      _count: {
+        select: {
+          reviews: true,
+          bookings: true
+        }
+      }
+    }
+  });
+  return {
+    message: "Featured tutors retrive successfully",
+    data: tutors
+  };
+};
 var tutorServices = {
   createTutorProfile,
   getAllTutors,
   getTutorById,
   updateTutorProfile,
   deleteTutorProfile,
-  getTutorOwnProfile
+  getTutorOwnProfile,
+  featuredTutors
 };
 
 // src/utils/error.ts
@@ -1346,13 +1387,37 @@ var deleteTutorProfile2 = async (req, res) => {
     });
   }
 };
+var featuredTutors2 = async (req, res) => {
+  try {
+    const result = await tutorServices.featuredTutors();
+    return res.status(httpStatus.OK).json({
+      success: true,
+      message: result.message || "Featured tutors retrieved successfully",
+      data: result.data
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Get tutors error:", error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to retrieve featured tutors",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+};
 var tutorController = {
   createTutorProfile: createTutorProfile2,
   getAllTutor,
   getTutorById: getTutorById2,
   updateTutorProfile: updateTutorProfile2,
   deleteTutorProfile: deleteTutorProfile2,
-  getTutorOwnProfile: getTutorOwnProfile2
+  getTutorOwnProfile: getTutorOwnProfile2,
+  featuredTutors: featuredTutors2
 };
 
 // src/middleware/auth.ts
@@ -1400,6 +1465,7 @@ var router = express.Router();
 router.post("/", auth_default("STUDENT" /* STUDENT */), tutorController.createTutorProfile);
 router.get("/", tutorController.getAllTutor);
 router.get("/my-profile", auth_default("TUTOR" /* TUTOR */), tutorController.getTutorOwnProfile);
+router.get("/featured", tutorController.featuredTutors);
 router.get("/:id", tutorController.getTutorById);
 router.put("/", auth_default("TUTOR" /* TUTOR */), tutorController.updateTutorProfile);
 router.delete("/", auth_default("TUTOR" /* TUTOR */), tutorController.deleteTutorProfile);
