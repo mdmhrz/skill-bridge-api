@@ -392,6 +392,40 @@ const deleteTutorProfile = async (
 
 
 
+const featuredTutors = async (req: Request, res: Response) => {
+    try {
+
+
+
+        const result = await tutorServices.featuredTutors();
+
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: result.message || "Featured tutors retrieved successfully",
+            data: result.data,
+        });
+    } catch (error: any) {
+        if (error instanceof AppError) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
+        console.error("Get tutors error:", error);
+
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: "Failed to retrieve featured tutors",
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+
+
+
+
+
 
 export const tutorController = {
     createTutorProfile,
@@ -399,5 +433,6 @@ export const tutorController = {
     getTutorById,
     updateTutorProfile,
     deleteTutorProfile,
-    getTutorOwnProfile
+    getTutorOwnProfile,
+    featuredTutors
 }

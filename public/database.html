@@ -1,619 +1,585 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkillBridge Database Schema | ERD Documentation</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* Your original styles – kept intact */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkillBridge · Database Schema</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --black:    #060608;
+      --surface:  #0d0d10;
+      --line:     #1c1c22;
+      --muted:    #52525c;
+      --body:     #a1a1aa;
+      --white:    #fafafb;
+      --blue:     #3b7ff5;
+      --blue-dim: rgba(59,127,245,.06);
+      --green:    #22c55e;
+      --amber:    #f59e0b;
+    }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #0a0e1a;
-            color: #e5e7eb;
-            line-height: 1.6;
-            min-height: 100vh;
-            position: relative;
-        }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
 
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: 0;
-        }
+    body {
+      font-family: 'Geist', system-ui, sans-serif;
+      background: var(--black);
+      color: var(--body);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-            position: relative;
-            z-index: 1;
-        }
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
 
-        header {
-            background: #131829;
-            border: 1px solid #1f2937;
-            border-radius: 16px;
-            padding: 3rem 2rem;
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            margin-bottom: 2rem;
-        }
+    /* ── topbar ── */
+    .topbar {
+      border-bottom: 1px solid var(--line);
+      padding: 18px 0;
+    }
+    .topbar .wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .wordmark {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--white);
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .back-link {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .72rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .back-link:hover { color: var(--white); }
 
-        .logo {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-        }
+    /* ── hero ── */
+    .hero {
+      padding: 80px 0 64px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .72rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 600;
+      color: var(--white);
+      line-height: 1.15;
+      letter-spacing: -.03em;
+      margin-bottom: 16px;
+    }
+    .lead {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--body);
+      max-width: 520px;
+    }
 
-        h1 {
-            font-size: 2.5rem;
-            color: #667eea;
-            margin-bottom: 0.5rem;
-            font-weight: 700;
-        }
+    /* ── section ── */
+    .section {
+      padding: 56px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .section:last-of-type { border-bottom: none; }
 
-        .subtitle {
-            font-size: 1.1rem;
-            color: #9ca3af;
-            margin-bottom: 1.5rem;
-        }
+    h2 {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--white);
+      letter-spacing: -.01em;
+      margin-bottom: 28px;
+    }
 
-        .legend {
-            background: #131829;
-            border: 1px solid #1f2937;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            margin-bottom: 2rem;
-        }
+    /* ── stats row ── */
+    .stats-row {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .stat {
+      flex: 1;
+      padding: 20px 16px;
+      border-right: 1px solid var(--line);
+      text-align: center;
+    }
+    .stat:last-child { border-right: none; }
+    .stat-val {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: var(--white);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .stat-lbl {
+      font-size: .72rem;
+      color: var(--muted);
+    }
+    @media (max-width: 600px) {
+      .stats-row { flex-wrap: wrap; }
+      .stat { flex: 0 0 50%; border-bottom: 1px solid var(--line); }
+      .stat:nth-child(2n) { border-right: none; }
+    }
 
-        .legend h2 {
-            font-size: 1.5rem;
-            color: #e5e7eb;
-            margin-bottom: 1.5rem;
-            font-weight: 700;
-            text-align: center;
-        }
+    /* ── table blocks ── */
+    .tables {
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
 
-        .legend-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-        }
+    .db-table {}
 
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: #1a1f35;
-            border-radius: 8px;
-        }
+    .db-table-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .82rem;
+      font-weight: 500;
+      color: var(--white);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .db-table-name .tag {
+      font-size: .65rem;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-weight: 400;
+      letter-spacing: .04em;
+    }
+    .tag-junction {
+      background: rgba(245,158,11,.1);
+      color: var(--amber);
+      border: 1px solid rgba(245,158,11,.2);
+    }
 
-        .legend-line {
-            width: 40px;
-            height: 3px;
-            border-radius: 2px;
-        }
+    .db-fields {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .db-field {
+      display: grid;
+      grid-template-columns: 180px 1fr 80px;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line);
+      gap: 12px;
+      transition: background .12s;
+    }
+    .db-field:last-child { border-bottom: none; }
+    .db-field:hover { background: var(--surface); }
+    .db-field.is-pk  { border-left: 2px solid var(--green); }
+    .db-field.is-fk  { border-left: 2px solid var(--blue); }
 
-        .one-to-one {
-            background: #10b981;
-        }
+    .f-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .78rem;
+      color: var(--white);
+    }
+    .f-name.pk-name { color: var(--green); }
+    .f-name.fk-name { color: var(--blue); }
 
-        .one-to-many {
-            background: #3b82f6;
-        }
+    .f-type {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .75rem;
+      color: var(--muted);
+    }
 
-        .many-to-many {
-            background: #f59e0b;
-        }
+    .f-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .62rem;
+      padding: 2px 6px;
+      border-radius: 3px;
+      letter-spacing: .04em;
+      text-align: center;
+      justify-self: end;
+    }
+    .badge-pk   { background: rgba(34,197,94,.1);  color: var(--green); border: 1px solid rgba(34,197,94,.2); }
+    .badge-fk   { background: rgba(59,127,245,.1); color: var(--blue);  border: 1px solid rgba(59,127,245,.2); }
+    .badge-enum { background: rgba(245,158,11,.1); color: var(--amber); border: 1px solid rgba(245,158,11,.2); }
 
-        .legend-text {
-            font-weight: 600;
-            color: #e5e7eb;
-        }
+    /* ── relationships ── */
+    .rel-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .rel-list li {
+      display: grid;
+      grid-template-columns: 32px 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .rel-list li:first-child { border-top: 1px solid var(--line); }
+    .rel-icon {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .72rem;
+      color: var(--muted);
+      padding-top: 1px;
+    }
+    .rel-desc {
+      font-size: .9rem;
+      color: var(--body);
+      line-height: 1.55;
+    }
+    .rel-desc code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .8rem;
+      color: var(--white);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
 
-        .erd-section {
-            background: #131829;
-            border: 1px solid #1f2937;
-            border-radius: 16px;
-            padding: 3rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            margin-bottom: 2rem;
-            overflow-x: auto;
-        }
+    /* ── enums ── */
+    .enums-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .enum-block {}
+    .enum-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .78rem;
+      color: var(--amber);
+      margin-bottom: 8px;
+    }
+    .enum-values {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .enum-val {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .75rem;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--line);
+      color: var(--body);
+      transition: background .12s;
+    }
+    .enum-val:last-child { border-bottom: none; }
+    .enum-val:hover { background: var(--surface); color: var(--white); }
 
-        .erd-canvas {
-            position: relative;
-            min-height: 1400px;
-            width: 100%;
-        }
+    /* ── footer ── */
+    footer {
+      padding: 32px 0;
+      border-top: 1px solid var(--line);
+    }
+    footer .wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-note {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .72rem;
+      color: var(--muted);
+    }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+    .footer-links a {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .72rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .footer-links a:hover { color: var(--white); }
 
-        .entity {
-            position: absolute;
-            background: #1a1f35;
-            border: 2px solid #2d3548;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-            min-width: 300px;
-        }
-
-        .entity:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-            border-color: #667eea;
-        }
-
-        .entity-header {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            padding: 1rem 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .entity-icon {
-            font-size: 1.5rem;
-        }
-
-        .entity-name {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: white;
-        }
-
-        .entity-fields {
-            padding: 0;
-        }
-
-        .field {
-            padding: 0.75rem 1.5rem;
-            border-bottom: 1px solid #2d3548;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.9rem;
-        }
-
-        .field:hover {
-            background: #131829;
-        }
-
-        .field:last-child {
-            border-bottom: none;
-        }
-
-        .field-icon {
-            font-size: 1rem;
-            opacity: 0.7;
-        }
-
-        .field-name {
-            flex: 1;
-            color: #e5e7eb;
-            font-weight: 500;
-        }
-
-        .field-type {
-            color: #9ca3af;
-            font-size: 0.85rem;
-            font-family: 'Courier New', monospace;
-        }
-
-        .badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .badge-pk {
-            background: #10b981;
-            color: white;
-        }
-
-        .badge-fk {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .badge-enum {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .pk {
-            background: rgba(16, 185, 129, 0.1);
-            border-left: 3px solid #10b981;
-        }
-
-        .fk {
-            background: rgba(59, 130, 246, 0.1);
-            border-left: 3px solid #3b82f6;
-        }
-
-        svg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-
-        .connection {
-            stroke-width: 2;
-            fill: none;
-            opacity: 0.7;
-        }
-
-        .conn-one-to-one {
-            stroke: #10b981;
-        }
-
-        .conn-one-to-many {
-            stroke: #3b82f6;
-        }
-
-        .conn-many-to-many {
-            stroke: #f59e0b;
-            stroke-dasharray: 8 4;
-        }
-
-        .stats-section {
-            background: #131829;
-            border: 1px solid #1f2937;
-            border-radius: 16px;
-            padding: 2.5rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            margin-bottom: 2rem;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .stat-card {
-            background: #1a1f35;
-            padding: 1.5rem;
-            border-radius: 12px;
-            text-align: center;
-            border: 2px solid #2d3548;
-        }
-
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #667eea;
-            display: block;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: #9ca3af;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-
-        footer {
-            text-align: center;
-            padding: 2rem;
-            color: #9ca3af;
-        }
-
-        footer a {
-            color: #667eea;
-            text-decoration: underline;
-        }
-
-        @media (max-width:768px) {
-            .erd-canvas {
-                min-height: 2200px;
-            }
-
-            .entity {
-                min-width: 280px;
-            }
-        }
-    </style>
+    /* ── fade-in ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .hero > * { animation: fadeUp .5s ease both; }
+    .hero .eyebrow { animation-delay: .05s; }
+    .hero h1      { animation-delay: .12s; }
+    .hero .lead   { animation-delay: .2s; }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <header>
-            <div class="logo">📊</div>
-            <h1>SkillBridge Database Schema</h1>
-            <p class="subtitle">Entity Relationship Diagram • PostgreSQL + Prisma</p>
-        </header>
 
-        <div class="legend">
-            <h2>🔗 Relationship Legend</h2>
-            <div class="legend-grid">
-                <div class="legend-item">
-                    <div class="legend-line one-to-one"></div><span class="legend-text">One-to-One</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-line one-to-many"></div><span class="legend-text">One-to-Many</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-line many-to-many"></div><span class="legend-text">Many-to-Many</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="erd-section">
-            <h2 style="text-align:center; margin-bottom:2.5rem;">Entity Relationship Diagram</h2>
-
-            <div class="erd-canvas">
-
-                <svg>
-                    <!-- 1:1  User ↔ TutorProfile -->
-                    <path d="M 380 130 L 680 130" class="connection conn-one-to-one" />
-
-                    <!-- 1:N  User → Booking (as student) -->
-                    <path d="M 200 280 L 200 420" class="connection conn-one-to-many" />
-
-                    <!-- 1:N  TutorProfile → Booking -->
-                    <path d="M 680 280 L 380 420" class="connection conn-one-to-many" />
-
-                    <!-- 1:N  TutorProfile → Availability -->
-                    <path d="M 860 280 L 860 420" class="connection conn-one-to-many" />
-
-                    <!-- 1:N  TutorProfile → TutorCategory -->
-                    <path d="M 1000 130 L 1280 130" class="connection conn-one-to-many" />
-
-                    <!-- 1:N  Category → TutorCategory -->
-                    <path d="M 1100 230 L 1280 230" class="connection conn-one-to-many" />
-
-                    <!-- 1:1  Booking ↔ Review -->
-                    <path d="M 200 680 L 200 850" class="connection conn-one-to-one" />
-
-                    <!-- 1:N  User → Review (as student) -->
-                    <path d="M 80 280 L 80 950" class="connection conn-one-to-many" />
-
-                    <!-- 1:N  TutorProfile → Review -->
-                    <path d="M 680 280 Q 680 950, 80 950" class="connection conn-one-to-many" />
-                </svg>
-
-                <!-- ───────────── User ───────────── -->
-                <div class="entity" style="top:40px; left:40px;">
-                    <div class="entity-header">
-                        <div class="entity-icon">👤</div>
-                        <div class="entity-name">User</div>
-                    </div>
-                    <div class="entity-fields">
-                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
-                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
-                        <div class="field"><span class="field-icon">📧</span><span class="field-name">email</span><span
-                                class="field-type">String @unique</span></div>
-                        <div class="field"><span class="field-icon">🔒</span><span
-                                class="field-name">password</span><span class="field-type">String?</span></div>
-                        <div class="field"><span class="field-icon">📝</span><span
-                                class="field-name">firstName</span><span class="field-type">String</span></div>
-                        <div class="field"><span class="field-icon">📝</span><span
-                                class="field-name">lastName</span><span class="field-type">String</span></div>
-                        <div class="field"><span class="field-icon">🎭</span><span class="field-name">role</span><span
-                                class="badge badge-enum">ENUM</span><span class="field-type">Role</span></div>
-                        <div class="field"><span class="field-icon">🚦</span><span class="field-name">status</span><span
-                                class="badge badge-enum">ENUM</span><span class="field-type">UserStatus</span></div>
-                        <div class="field"><span class="field-icon">📅</span><span
-                                class="field-name">emailVerified</span><span class="field-type">DateTime?</span></div>
-                        <div class="field"><span class="field-icon">🖼️</span><span class="field-name">image</span><span
-                                class="field-type">String?</span></div>
-                    </div>
-                </div>
-
-                <!-- ───────────── TutorProfile ───────────── -->
-                <div class="entity" style="top:40px; left:620px;">
-                    <div class="entity-header">
-                        <div class="entity-icon">👨‍🏫</div>
-                        <div class="entity-name">TutorProfile</div>
-                    </div>
-                    <div class="entity-fields">
-                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
-                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
-                        <div class="field fk"><span class="field-icon">🔗</span><span
-                                class="field-name">userId</span><span class="badge badge-fk">FK</span><span
-                                class="field-type">UUID @unique</span></div>
-                        <div class="field"><span class="field-icon">📄</span><span class="field-name">title</span><span
-                                class="field-type">String</span></div>
-                        <div class="field"><span class="field-icon">📝</span><span class="field-name">bio</span><span
-                                class="field-type">Text</span></div>
-                        <div class="field"><span class="field-icon">🎓</span><span
-                                class="field-name">education</span><span class="field-type">String?</span></div>
-                        <div class="field"><span class="field-icon">💼</span><span
-                                class="field-name">experience</span><span class="field-type">Int</span></div>
-                        <div class="field"><span class="field-icon">💰</span><span
-                                class="field-name">hourlyRate</span><span class="field-type">Decimal</span></div>
-                        <div class="field"><span class="field-icon">🌐</span><span
-                                class="field-name">languages</span><span class="field-type">String[]</span></div>
-                        <div class="field"><span class="field-icon">⭐</span><span
-                                class="field-name">averageRating</span><span class="field-type">Decimal
-                                @default(0)</span></div>
-                        <div class="field"><span class="field-icon">🔢</span><span
-                                class="field-name">reviewCount</span><span class="field-type">Int @default(0)</span>
-                        </div>
-                        <div class="field"><span class="field-icon">✅</span><span
-                                class="field-name">isVerified</span><span class="field-type">Boolean
-                                @default(false)</span></div>
-                    </div>
-                </div>
-
-                <!-- ───────────── Category ───────────── -->
-                <div class="entity" style="top:40px; left:1050px;">
-                    <div class="entity-header">
-                        <div class="entity-icon">📚</div>
-                        <div class="entity-name">Category</div>
-                    </div>
-                    <div class="entity-fields">
-                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
-                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
-                        <div class="field"><span class="field-icon">🏷️</span><span class="field-name">name</span><span
-                                class="field-type">String</span></div>
-                        <div class="field"><span class="field-icon">🔗</span><span class="field-name">slug</span><span
-                                class="field-type">String @unique</span></div>
-                        <div class="field"><span class="field-icon">📄</span><span
-                                class="field-name">description</span><span class="field-type">Text?</span></div>
-                        <div class="field"><span class="field-icon">🖼️</span><span class="field-name">icon</span><span
-                                class="field-type">String?</span></div>
-                        <div class="field"><span class="field-icon">🚦</span><span
-                                class="field-name">isActive</span><span class="field-type">Boolean @default(true)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ───────────── TutorCategory (junction) ───────────── -->
-                <div class="entity" style="top:40px; left:1250px;">
-                    <div class="entity-header">
-                        <div class="entity-icon">🔗</div>
-                        <div class="entity-name">TutorCategory</div>
-                    </div>
-                    <div class="entity-fields">
-                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
-                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
-                        <div class="field fk"><span class="field-icon">👨‍🏫</span><span
-                                class="field-name">tutorProfileId</span><span class="badge badge-fk">FK</span><span
-                                class="field-type">UUID</span></div>
-                        <div class="field fk"><span class="field-icon">📚</span><span
-                                class="field-name">categoryId</span><span class="badge badge-fk">FK</span><span
-                                class="field-type">UUID</span></div>
-                    </div>
-                </div>
-
-                <!-- ───────────── Availability ───────────── -->
-                <div class="entity" style="top:380px; left:780px;">
-                    <div class="entity-header">
-                        <div class="entity-icon">📅</div>
-                        <div class="entity-name">Availability</div>
-                    </div>
-                    <div class="entity-fields">
-                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
-                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
-                        <div class="field fk"><span class="field-icon">🔗</span><span
-                                class="field-name">tutorProfileId</span><span class="badge badge-fk">FK</span><span
-                                class="field-type">UUID</span></div>
-                        <div class="field"><span class="field-icon">📆</span><span
-                                class="field-name">dayOfWeek</span><span class="badge badge-enum">ENUM</span><span
-                                class="field-type">DayOfWeek</span></div>
-                        <div class="field"><span class="field-icon">🕐</span><span
-                                class="field-name">startTime</span><span class="field-type">String</span></div>
-                        <div class="field"><span class="field-icon">🕔</span><span
-                                class="field-name">endTime</span><span class="field-type">String</span></div>
-                        <div class="field"><span class="field-icon">🚦</span><span
-                                class="field-name">isActive</span><span class="field-type">Boolean @default(true)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ───────────── Booking ───────────── -->
-                <div class="entity" style="top:380px; left:40px;">
-                    <div class="entity-header">
-                        <div class="entity-icon">📖</div>
-                        <div class="entity-name">Booking</div>
-                    </div>
-                    <div class="entity-fields">
-                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
-                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
-                        <div class="field fk"><span class="field-icon">👩‍🎓</span><span
-                                class="field-name">studentId</span><span class="badge badge-fk">FK</span><span
-                                class="field-type">UUID</span></div>
-                        <div class="field fk"><span class="field-icon">👨‍🏫</span><span
-                                class="field-name">tutorProfileId</span><span class="badge badge-fk">FK</span><span
-                                class="field-type">UUID</span></div>
-                        <div class="field fk"><span class="field-icon">📚</span><span
-                                class="field-name">categoryId</span><span class="badge badge-fk">FK</span><span
-                                class="field-type">UUID?</span></div>
-                        <div class="field"><span class="field-icon">📅</span><span
-                                class="field-name">scheduledDate</span><span class="field-type">DateTime</span></div>
-                        <div class="field"><span class="field-icon">⏱️</span><span
-                                class="field-name">duration</span><span class="field-type">Int</span></div>
-                        <div class="field"><span class="field-icon">💵</span><span
-                                class="field-name">totalPrice</span><span class="field-type">Decimal</span></div>
-                        <div class="field"><span class="field-icon">📊</span><span class="field-name">status</span><span
-                                class="badge badge-enum">ENUM</span><span class="field-type">BookingStatus</span></div>
-                        <div class="field"><span class="field-icon">🔗</span><span
-                                class="field-name">meetingLink</span><span class="field-type">String?</span></div>
-                        <div class="field"><span class="field-icon">📝</span><span class="field-name">notes</span><span
-                                class="field-type">Text?</span></div>
-                        <div class="field"><span class="field-icon">❌</span><span
-                                class="field-name">cancellationReason</span><span class="field-type">String?</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ───────────── Review ───────────── -->
-                <div class="entity" style="top:780px; left:40px;">
-                    <div class="entity-header">
-                        <div class="entity-icon">⭐</div>
-                        <div class="entity-name">Review</div>
-                    </div>
-                    <div class="entity-fields">
-                        <div class="field pk"><span class="field-icon">🔑</span><span class="field-name">id</span><span
-                                class="badge badge-pk">PK</span><span class="field-type">UUID</span></div>
-                        <div class="field fk"><span class="field-icon">📖</span><span
-                                class="field-name">bookingId</span><span class="badge badge-fk">FK</span><span
-                                class="field-type">UUID @unique</span></div>
-                        <div class="field fk"><span class="field-icon">👩‍🎓</span><span
-                                class="field-name">studentId</span><span class="badge badge-fk">FK</span><span
-                                class="field-type">UUID</span></div>
-                        <div class="field fk"><span class="field-icon">👨‍🏫</span><span
-                                class="field-name">tutorProfileId</span><span class="badge badge-fk">FK</span><span
-                                class="field-type">UUID</span></div>
-                        <div class="field"><span class="field-icon">⭐</span><span class="field-name">rating</span><span
-                                class="field-type">Int</span></div>
-                        <div class="field"><span class="field-icon">💬</span><span
-                                class="field-name">comment</span><span class="field-type">Text?</span></div>
-                        <div class="field"><span class="field-icon">📅</span><span
-                                class="field-name">createdAt</span><span class="field-type">DateTime
-                                @default(now())</span></div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-        <div class="stats-section">
-            <h2>📊 Schema Statistics</h2>
-            <div class="stats-grid">
-                <div class="stat-card"><span class="stat-number">7</span><span class="stat-label">Main Tables</span>
-                </div>
-                <div class="stat-card"><span class="stat-number">4</span><span class="stat-label">Enum Types</span>
-                </div>
-                <div class="stat-card"><span class="stat-number">11+</span><span class="stat-label">Relationships</span>
-                </div>
-                <div class="stat-card"><span class="stat-number">UUID</span><span class="stat-label">Primary Keys</span>
-                </div>
-                <div class="stat-card"><span class="stat-number">✓</span><span class="stat-label">Cascade deletes</span>
-                </div>
-                <div class="stat-card"><span class="stat-number">✓</span><span class="stat-label">Indexed fields</span>
-                </div>
-            </div>
-        </div>
-
-        <footer>
-            <p>© 2026 SkillBridge • Database designed for scalability and tutor-student marketplace needs</p>
-        </footer>
+  <!-- ── Topbar ── -->
+  <nav class="topbar">
+    <div class="wrap">
+      <a class="wordmark" href="/">SkillBridge API</a>
+      <div class="topbar-right">
+        <a class="back-link" href="./index.html">← Back to API</a>
+      </div>
     </div>
-</body>
+  </nav>
 
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">PostgreSQL · Prisma · ERD</p>
+      <h1>Database Schema</h1>
+      <p class="lead">
+        Seven tables, four enum types, UUID primary keys throughout.
+        Designed for a tutor-student marketplace with bookings,
+        availability, and a review system.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Stats ── -->
+  <section class="section">
+    <div class="wrap">
+      <div class="stats-row">
+        <div class="stat"><span class="stat-val">7</span><span class="stat-lbl">Tables</span></div>
+        <div class="stat"><span class="stat-val">4</span><span class="stat-lbl">Enum types</span></div>
+        <div class="stat"><span class="stat-val">11</span><span class="stat-lbl">Relations</span></div>
+        <div class="stat"><span class="stat-val">UUID</span><span class="stat-lbl">Primary keys</span></div>
+        <div class="stat"><span class="stat-val">∞</span><span class="stat-lbl">Cascade deletes</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Tables ── -->
+  <section class="section">
+    <div class="wrap">
+      <h2>Tables</h2>
+      <div class="tables">
+
+        <!-- User -->
+        <div class="db-table">
+          <div class="db-table-name">user</div>
+          <div class="db-fields">
+            <div class="db-field is-pk"><span class="f-name pk-name">id</span><span class="f-type">UUID @default(cuid())</span><span class="f-badge badge-pk">PK</span></div>
+            <div class="db-field"><span class="f-name">name</span><span class="f-type">String</span><span></span></div>
+            <div class="db-field"><span class="f-name">email</span><span class="f-type">String @unique</span><span></span></div>
+            <div class="db-field"><span class="f-name">password</span><span class="f-type">String?</span><span></span></div>
+            <div class="db-field"><span class="f-name">image</span><span class="f-type">String?</span><span></span></div>
+            <div class="db-field"><span class="f-name">emailVerified</span><span class="f-type">Boolean @default(false)</span><span></span></div>
+            <div class="db-field"><span class="f-name">phone</span><span class="f-type">String?</span><span></span></div>
+            <div class="db-field"><span class="f-name">role</span><span class="f-type">Role</span><span class="f-badge badge-enum">ENUM</span></div>
+            <div class="db-field"><span class="f-name">status</span><span class="f-type">UserStatus</span><span class="f-badge badge-enum">ENUM</span></div>
+            <div class="db-field"><span class="f-name">isBanned</span><span class="f-type">Boolean @default(false)</span><span></span></div>
+            <div class="db-field"><span class="f-name">createdAt</span><span class="f-type">DateTime @default(now())</span><span></span></div>
+          </div>
+        </div>
+
+        <!-- TutorProfile -->
+        <div class="db-table">
+          <div class="db-table-name">tutor_profile</div>
+          <div class="db-fields">
+            <div class="db-field is-pk"><span class="f-name pk-name">id</span><span class="f-type">UUID @default(cuid())</span><span class="f-badge badge-pk">PK</span></div>
+            <div class="db-field is-fk"><span class="f-name fk-name">userId</span><span class="f-type">UUID @unique → user.id</span><span class="f-badge badge-fk">FK</span></div>
+            <div class="db-field"><span class="f-name">title</span><span class="f-type">String</span><span></span></div>
+            <div class="db-field"><span class="f-name">bio</span><span class="f-type">Text</span><span></span></div>
+            <div class="db-field"><span class="f-name">education</span><span class="f-type">String?</span><span></span></div>
+            <div class="db-field"><span class="f-name">experience</span><span class="f-type">Int</span><span></span></div>
+            <div class="db-field"><span class="f-name">hourlyRate</span><span class="f-type">Decimal</span><span></span></div>
+            <div class="db-field"><span class="f-name">languages</span><span class="f-type">String[]</span><span></span></div>
+            <div class="db-field"><span class="f-name">rating</span><span class="f-type">Decimal @default(0)</span><span></span></div>
+            <div class="db-field"><span class="f-name">totalReviews</span><span class="f-type">Int @default(0)</span><span></span></div>
+            <div class="db-field"><span class="f-name">isVerified</span><span class="f-type">Boolean @default(false)</span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Category -->
+        <div class="db-table">
+          <div class="db-table-name">category</div>
+          <div class="db-fields">
+            <div class="db-field is-pk"><span class="f-name pk-name">id</span><span class="f-type">UUID @default(cuid())</span><span class="f-badge badge-pk">PK</span></div>
+            <div class="db-field"><span class="f-name">name</span><span class="f-type">String</span><span></span></div>
+            <div class="db-field"><span class="f-name">slug</span><span class="f-type">String @unique</span><span></span></div>
+            <div class="db-field"><span class="f-name">description</span><span class="f-type">Text?</span><span></span></div>
+            <div class="db-field"><span class="f-name">icon</span><span class="f-type">String?</span><span></span></div>
+            <div class="db-field"><span class="f-name">isActive</span><span class="f-type">Boolean @default(true)</span><span></span></div>
+          </div>
+        </div>
+
+        <!-- TutorCategory -->
+        <div class="db-table">
+          <div class="db-table-name">tutor_category <span class="tag tag-junction">junction</span></div>
+          <div class="db-fields">
+            <div class="db-field is-pk"><span class="f-name pk-name">id</span><span class="f-type">UUID @default(cuid())</span><span class="f-badge badge-pk">PK</span></div>
+            <div class="db-field is-fk"><span class="f-name fk-name">tutorProfileId</span><span class="f-type">UUID → tutor_profile.id</span><span class="f-badge badge-fk">FK</span></div>
+            <div class="db-field is-fk"><span class="f-name fk-name">categoryId</span><span class="f-type">UUID → category.id</span><span class="f-badge badge-fk">FK</span></div>
+            <div class="db-field"><span class="f-name">createdAt</span><span class="f-type">DateTime @default(now())</span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Availability -->
+        <div class="db-table">
+          <div class="db-table-name">availability</div>
+          <div class="db-fields">
+            <div class="db-field is-pk"><span class="f-name pk-name">id</span><span class="f-type">UUID @default(cuid())</span><span class="f-badge badge-pk">PK</span></div>
+            <div class="db-field is-fk"><span class="f-name fk-name">tutorProfileId</span><span class="f-type">UUID → tutor_profile.id</span><span class="f-badge badge-fk">FK</span></div>
+            <div class="db-field"><span class="f-name">dayOfWeek</span><span class="f-type">DayOfWeek</span><span class="f-badge badge-enum">ENUM</span></div>
+            <div class="db-field"><span class="f-name">startTime</span><span class="f-type">String</span><span></span></div>
+            <div class="db-field"><span class="f-name">endTime</span><span class="f-type">String</span><span></span></div>
+            <div class="db-field"><span class="f-name">isActive</span><span class="f-type">Boolean @default(true)</span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Booking -->
+        <div class="db-table">
+          <div class="db-table-name">booking</div>
+          <div class="db-fields">
+            <div class="db-field is-pk"><span class="f-name pk-name">id</span><span class="f-type">UUID @default(cuid())</span><span class="f-badge badge-pk">PK</span></div>
+            <div class="db-field is-fk"><span class="f-name fk-name">studentId</span><span class="f-type">UUID → user.id</span><span class="f-badge badge-fk">FK</span></div>
+            <div class="db-field is-fk"><span class="f-name fk-name">tutorProfileId</span><span class="f-type">UUID → tutor_profile.id</span><span class="f-badge badge-fk">FK</span></div>
+            <div class="db-field is-fk"><span class="f-name fk-name">categoryId</span><span class="f-type">UUID? → category.id</span><span class="f-badge badge-fk">FK</span></div>
+            <div class="db-field"><span class="f-name">scheduledDate</span><span class="f-type">DateTime</span><span></span></div>
+            <div class="db-field"><span class="f-name">duration</span><span class="f-type">Int (minutes)</span><span></span></div>
+            <div class="db-field"><span class="f-name">totalPrice</span><span class="f-type">Decimal</span><span></span></div>
+            <div class="db-field"><span class="f-name">status</span><span class="f-type">BookingStatus</span><span class="f-badge badge-enum">ENUM</span></div>
+            <div class="db-field"><span class="f-name">meetingLink</span><span class="f-type">String?</span><span></span></div>
+            <div class="db-field"><span class="f-name">notes</span><span class="f-type">Text?</span><span></span></div>
+            <div class="db-field"><span class="f-name">cancellationReason</span><span class="f-type">String?</span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Review -->
+        <div class="db-table">
+          <div class="db-table-name">review</div>
+          <div class="db-fields">
+            <div class="db-field is-pk"><span class="f-name pk-name">id</span><span class="f-type">UUID @default(cuid())</span><span class="f-badge badge-pk">PK</span></div>
+            <div class="db-field is-fk"><span class="f-name fk-name">bookingId</span><span class="f-type">UUID @unique → booking.id</span><span class="f-badge badge-fk">FK</span></div>
+            <div class="db-field is-fk"><span class="f-name fk-name">studentId</span><span class="f-type">UUID → user.id</span><span class="f-badge badge-fk">FK</span></div>
+            <div class="db-field is-fk"><span class="f-name fk-name">tutorProfileId</span><span class="f-type">UUID → tutor_profile.id</span><span class="f-badge badge-fk">FK</span></div>
+            <div class="db-field"><span class="f-name">rating</span><span class="f-type">Int (1–5)</span><span></span></div>
+            <div class="db-field"><span class="f-name">comment</span><span class="f-type">Text?</span><span></span></div>
+            <div class="db-field"><span class="f-name">createdAt</span><span class="f-type">DateTime @default(now())</span><span></span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Relationships ── -->
+  <section class="section">
+    <div class="wrap">
+      <h2>Relationships</h2>
+      <ul class="rel-list">
+        <li>
+          <span class="rel-icon">1:1</span>
+          <span class="rel-desc"><code>user</code> has one <code>tutor_profile</code> — enforced by <code>userId @unique</code>.</span>
+        </li>
+        <li>
+          <span class="rel-icon">1:N</span>
+          <span class="rel-desc"><code>tutor_profile</code> has many <code>availability</code> slots. Weekly recurring schedule.</span>
+        </li>
+        <li>
+          <span class="rel-icon">M:N</span>
+          <span class="rel-desc"><code>tutor_profile</code> and <code>category</code> linked through <code>tutor_category</code> junction table.</span>
+        </li>
+        <li>
+          <span class="rel-icon">1:N</span>
+          <span class="rel-desc"><code>user</code> (as student) has many <code>booking</code> rows.</span>
+        </li>
+        <li>
+          <span class="rel-icon">1:N</span>
+          <span class="rel-desc"><code>tutor_profile</code> has many <code>booking</code> rows.</span>
+        </li>
+        <li>
+          <span class="rel-icon">1:1</span>
+          <span class="rel-desc"><code>booking</code> has at most one <code>review</code> — enforced by <code>bookingId @unique</code> on review.</span>
+        </li>
+        <li>
+          <span class="rel-icon">1:N</span>
+          <span class="rel-desc"><code>user</code> (as student) has many <code>review</code> rows.</span>
+        </li>
+        <li>
+          <span class="rel-icon">1:N</span>
+          <span class="rel-desc"><code>tutor_profile</code> has many <code>review</code> rows. <code>rating</code> and <code>totalReviews</code> are denormalised for fast reads.</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ── Enums ── -->
+  <section class="section">
+    <div class="wrap">
+      <h2>Enums</h2>
+      <div class="enums-grid">
+        <div class="enum-block">
+          <div class="enum-name">Role</div>
+          <div class="enum-values">
+            <div class="enum-val">STUDENT</div>
+            <div class="enum-val">TUTOR</div>
+            <div class="enum-val">ADMIN</div>
+          </div>
+        </div>
+        <div class="enum-block">
+          <div class="enum-name">UserStatus</div>
+          <div class="enum-values">
+            <div class="enum-val">ACTIVE</div>
+            <div class="enum-val">INACTIVE</div>
+            <div class="enum-val">BANNED</div>
+          </div>
+        </div>
+        <div class="enum-block">
+          <div class="enum-name">BookingStatus</div>
+          <div class="enum-values">
+            <div class="enum-val">PENDING</div>
+            <div class="enum-val">CONFIRMED</div>
+            <div class="enum-val">COMPLETED</div>
+            <div class="enum-val">CANCELLED</div>
+          </div>
+        </div>
+        <div class="enum-block">
+          <div class="enum-name">DayOfWeek</div>
+          <div class="enum-values">
+            <div class="enum-val">MONDAY</div>
+            <div class="enum-val">TUESDAY</div>
+            <div class="enum-val">WEDNESDAY</div>
+            <div class="enum-val">THURSDAY</div>
+            <div class="enum-val">FRIDAY</div>
+            <div class="enum-val">SATURDAY</div>
+            <div class="enum-val">SUNDAY</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <div class="wrap">
+      <span class="footer-note">© 2026 SkillBridge</span>
+      <div class="footer-links">
+        <a href="./index.html">API Overview</a>
+        <a href="https://github.com/mdmhrz/skill-bridge-api" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
 </html>

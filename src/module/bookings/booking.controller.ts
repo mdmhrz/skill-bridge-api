@@ -76,6 +76,33 @@ const getStudentBookings = async (req: Request, res: Response) => {
     }
 };
 
+const getAllBookings = async (req: Request, res: Response) => {
+    try {
+        const result = await bookingServices.getAllBookings();
+
+        return res.status(200).json({
+            success: true,
+            message: result.message,
+            data: result.allBookings,
+        });
+    } catch (error: any) {
+        if (error instanceof AppError) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
+        console.error("Get student bookings error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+
 
 const getBookingById = async (req: Request, res: Response) => {
     try {
@@ -121,5 +148,5 @@ const getBookingById = async (req: Request, res: Response) => {
 
 
 export const bookingController = {
-    createBooking, getStudentBookings, getBookingById
+    createBooking, getStudentBookings, getBookingById, getAllBookings
 }
