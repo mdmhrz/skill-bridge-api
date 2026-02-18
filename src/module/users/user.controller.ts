@@ -81,6 +81,103 @@ const getUsers = async (req: Request, res: Response) => {
     }
 };
 
+const getAdminDashboardStats = async (req: Request, res: Response) => {
+    try {
+        const requestingUser = req.user;
+
+        if (!requestingUser?.id) {
+            throw new AppError(
+                httpStatus.UNAUTHORIZED,
+                "Authentication required. Please login."
+            );
+        }
+
+        const result = await userServices.getAdminDashboardStats(requestingUser);
+
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: result.message,
+            data: result.data,
+        });
+    } catch (error: any) {
+        if (error instanceof AppError) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
+        console.error("Get admin dashboard stats error:", error);
+
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: "Something went wrong while retrieving admin dashboard statistics.",
+        });
+    }
+};
+
+const updateStudentProfile = async (req: Request, res: Response) => {
+    try {
+        const requestingUser = req.user;
+
+        if (!requestingUser?.id) {
+            throw new AppError(
+                httpStatus.UNAUTHORIZED,
+                "Authentication required. Please login."
+            );
+        }
+
+        if (requestingUser.role !== "STUDENT") {
+            throw new AppError(
+                httpStatus.FORBIDDEN,
+                "Access denied: Students only"
+            );
+        }
+
+        const { name, phone, image } = req.body ?? {};
+
+        if (name !== undefined && typeof name !== "string") {
+            throw new AppError(httpStatus.BAD_REQUEST, "Name must be a string");
+        }
+
+        if (phone !== undefined && typeof phone !== "string") {
+            throw new AppError(httpStatus.BAD_REQUEST, "Phone must be a string");
+        }
+
+        if (image !== undefined && typeof image !== "string") {
+            throw new AppError(httpStatus.BAD_REQUEST, "Image must be a string URL");
+        }
+
+        const payload = {
+            ...(name !== undefined ? { name: name.trim() } : {}),
+            ...(phone !== undefined ? { phone: phone.trim() } : {}),
+            ...(image !== undefined ? { image: image.trim() } : {}),
+        };
+
+        const result = await userServices.updateStudentProfile(requestingUser, payload);
+
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: result.message,
+            data: result.data,
+        });
+    } catch (error: any) {
+        if (error instanceof AppError) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
+        console.error("Update student profile error:", error);
+
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: "Something went wrong while updating profile.",
+        });
+    }
+};
+
 
 const getUserById = async (req: Request, res: Response) => {
     try {
@@ -133,5 +230,8 @@ const getUserById = async (req: Request, res: Response) => {
 
 
 export const userController = {
-    getUsers, getUserById
+    getUsers,
+    getAdminDashboardStats,
+    getUserById,
+    updateStudentProfile,
 };

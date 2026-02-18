@@ -855,7 +855,7 @@ var getAllTutors = async (options = {}) => {
   const tutors = await prisma.tutorProfile.findMany({
     where,
     skip,
-    take: limit,
+    take: limit ? limit : 9,
     orderBy: sortBy ? { [sortBy]: sortOrder } : { createdAt: "desc" },
     include: {
       user: { select: { name: true, email: true } },
@@ -2480,6 +2480,35 @@ import express7 from "express";
 
 // src/module/users/user.services.ts
 import httpStatus6 from "http-status";
+var getLastMonths = (count) => {
+  const months = [];
+  const now = /* @__PURE__ */ new Date();
+  for (let i = count - 1; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+      label: date.toLocaleString("en-US", { month: "short" }),
+      start: date
+    });
+  }
+  return months;
+};
+var mapDatesToMonthlySeries = (dates, months) => {
+  const bucket = {};
+  for (const month of months) {
+    bucket[month.key] = 0;
+  }
+  for (const date of dates) {
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    if (bucket[key] !== void 0) {
+      bucket[key] += 1;
+    }
+  }
+  return months.map((month) => ({
+    label: month.label,
+    value: bucket[month.key] ?? 0
+  }));
+};
 var getUsers = async (options = {}) => {
   const { page, limit, skip, sortBy, sortOrder } = paginationSortingHelper_default(options);
   const where = {};
@@ -2557,9 +2586,216 @@ var getUserById = async (requestingUser, id) => {
     data: user
   };
 };
+var updateStudentProfile = async (requestingUser, payload) => {
+  if (requestingUser.role !== "STUDENT" /* STUDENT */) {
+    throw new AppError(
+      httpStatus6.FORBIDDEN,
+      "Access denied: Students only"
+    );
+  }
+  if (!payload || Object.keys(payload).length === 0) {
+    throw new AppError(httpStatus6.BAD_REQUEST, "No update data provided");
+  }
+  const updateData = {
+    ...payload.name !== void 0 ? { name: payload.name } : {},
+    ...payload.phone !== void 0 ? { phone: payload.phone } : {},
+    ...payload.image !== void 0 ? { image: payload.image } : {}
+  };
+  if (Object.keys(updateData).length === 0) {
+    throw new AppError(httpStatus6.BAD_REQUEST, "No valid profile fields provided");
+  }
+  const updatedUser = await prisma.user.update({
+    where: { id: requestingUser.id },
+    data: updateData,
+    include: {
+      studentBookings: true,
+      reviews: true,
+      _count: {
+        select: {
+          studentBookings: true,
+          reviews: true
+        }
+      }
+    }
+  });
+  return {
+    message: "Profile updated successfully.",
+    data: updatedUser
+  };
+};
+var getAdminDashboardStats = async (requestingUser) => {
+  if (!requestingUser?.id) {
+    throw new AppError(httpStatus6.UNAUTHORIZED, "Authentication required. Please login.");
+  }
+  if (requestingUser.role !== "ADMIN" /* ADMIN */) {
+    throw new AppError(httpStatus6.FORBIDDEN, "Access denied: Admins only");
+  }
+  const now = /* @__PURE__ */ new Date();
+  const months = getLastMonths(6);
+  const firstMonthStart = months[0]?.start ?? new Date(now.getFullYear(), now.getMonth(), 1);
+  const [
+    totalUsers,
+    totalStudents,
+    totalTutors,
+    totalAdmins,
+    activeUsers,
+    inactiveUsers,
+    bannedUsers,
+    totalTutorProfiles,
+    verifiedTutors,
+    totalBookings,
+    confirmedBookings,
+    completedBookings,
+    cancelledBookings,
+    ongoingBookings,
+    upcomingBookings,
+    pastBookings,
+    bookingRevenue,
+    totalReviews,
+    visibleReviews,
+    hiddenReviews,
+    ratingAggregate,
+    totalCategories,
+    activeCategories,
+    totalAvailabilitySlots,
+    createdUsers,
+    createdBookings,
+    createdReviews,
+    topCategories
+  ] = await prisma.$transaction([
+    prisma.user.count(),
+    prisma.user.count({ where: { role: "STUDENT" } }),
+    prisma.user.count({ where: { role: "TUTOR" } }),
+    prisma.user.count({ where: { role: "ADMIN" } }),
+    prisma.user.count({ where: { status: "ACTIVE" } }),
+    prisma.user.count({ where: { status: "INACTIVE" } }),
+    prisma.user.count({ where: { OR: [{ status: "BANNED" }, { isBanned: true }] } }),
+    prisma.tutorProfile.count(),
+    prisma.tutorProfile.count({ where: { isVerified: true } }),
+    prisma.booking.count(),
+    prisma.booking.count({ where: { status: "CONFIRMED" } }),
+    prisma.booking.count({ where: { status: "COMPLETED" } }),
+    prisma.booking.count({ where: { status: "CANCELLED" } }),
+    prisma.booking.count({
+      where: {
+        scheduledDate: { lte: now },
+        status: { in: ["CONFIRMED"] },
+        completedAt: null,
+        cancelledAt: null
+      }
+    }),
+    prisma.booking.count({
+      where: {
+        scheduledDate: { gt: now },
+        status: { in: ["CONFIRMED"] }
+      }
+    }),
+    prisma.booking.count({ where: { scheduledDate: { lt: now } } }),
+    prisma.booking.aggregate({
+      where: { status: "COMPLETED" },
+      _sum: { totalPrice: true }
+    }),
+    prisma.review.count(),
+    prisma.review.count({ where: { isVisible: true } }),
+    prisma.review.count({ where: { isVisible: false } }),
+    prisma.review.aggregate({ _avg: { rating: true } }),
+    prisma.category.count(),
+    prisma.category.count({ where: { isActive: true } }),
+    prisma.availability.count(),
+    prisma.user.findMany({
+      where: { createdAt: { gte: firstMonthStart } },
+      select: { createdAt: true }
+    }),
+    prisma.booking.findMany({
+      where: { createdAt: { gte: firstMonthStart } },
+      select: { createdAt: true }
+    }),
+    prisma.review.findMany({
+      where: { createdAt: { gte: firstMonthStart } },
+      select: { createdAt: true }
+    }),
+    prisma.category.findMany({
+      take: 6,
+      orderBy: {
+        tutors: {
+          _count: "desc"
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: {
+            tutors: true
+          }
+        }
+      }
+    })
+  ]);
+  const pendingBookings = 0;
+  const usersTrend = mapDatesToMonthlySeries(
+    createdUsers.map((item) => item.createdAt),
+    months
+  );
+  const bookingsTrend = mapDatesToMonthlySeries(
+    createdBookings.map((item) => item.createdAt),
+    months
+  );
+  const reviewsTrend = mapDatesToMonthlySeries(
+    createdReviews.map((item) => item.createdAt),
+    months
+  );
+  const bookingStatusBreakdown = [
+    { status: "PENDING", value: pendingBookings },
+    { status: "CONFIRMED", value: confirmedBookings },
+    { status: "COMPLETED", value: completedBookings },
+    { status: "CANCELLED", value: cancelledBookings }
+  ];
+  const topCategoryBreakdown = topCategories.map((category) => ({
+    label: category.name,
+    value: category._count.tutors
+  }));
+  return {
+    message: "Admin dashboard statistics retrieved successfully",
+    data: {
+      overview: {
+        totalUsers,
+        totalStudents,
+        totalTutors,
+        totalAdmins,
+        activeUsers,
+        inactiveUsers,
+        bannedUsers,
+        totalTutorProfiles,
+        verifiedTutors,
+        totalBookings,
+        ongoingBookings,
+        upcomingBookings,
+        pastBookings,
+        totalReviews,
+        visibleReviews,
+        hiddenReviews,
+        totalCategories,
+        activeCategories,
+        totalAvailabilitySlots,
+        completedRevenue: Number(bookingRevenue._sum.totalPrice ?? 0),
+        averageRating: Number((ratingAggregate._avg.rating ?? 0).toFixed(2))
+      },
+      charts: {
+        usersTrend,
+        bookingsTrend,
+        reviewsTrend,
+        bookingStatusBreakdown,
+        topCategoryBreakdown
+      }
+    }
+  };
+};
 var userServices = {
   getUsers,
-  getUserById
+  getUserById,
+  updateStudentProfile,
+  getAdminDashboardStats
 };
 
 // src/module/users/user.controller.ts
@@ -2618,6 +2854,85 @@ var getUsers2 = async (req, res) => {
     });
   }
 };
+var getAdminDashboardStats2 = async (req, res) => {
+  try {
+    const requestingUser = req.user;
+    if (!requestingUser?.id) {
+      throw new AppError(
+        httpStatus7.UNAUTHORIZED,
+        "Authentication required. Please login."
+      );
+    }
+    const result = await userServices.getAdminDashboardStats(requestingUser);
+    return res.status(httpStatus7.OK).json({
+      success: true,
+      message: result.message,
+      data: result.data
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Get admin dashboard stats error:", error);
+    return res.status(httpStatus7.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Something went wrong while retrieving admin dashboard statistics."
+    });
+  }
+};
+var updateStudentProfile2 = async (req, res) => {
+  try {
+    const requestingUser = req.user;
+    if (!requestingUser?.id) {
+      throw new AppError(
+        httpStatus7.UNAUTHORIZED,
+        "Authentication required. Please login."
+      );
+    }
+    if (requestingUser.role !== "STUDENT") {
+      throw new AppError(
+        httpStatus7.FORBIDDEN,
+        "Access denied: Students only"
+      );
+    }
+    const { name, phone, image } = req.body ?? {};
+    if (name !== void 0 && typeof name !== "string") {
+      throw new AppError(httpStatus7.BAD_REQUEST, "Name must be a string");
+    }
+    if (phone !== void 0 && typeof phone !== "string") {
+      throw new AppError(httpStatus7.BAD_REQUEST, "Phone must be a string");
+    }
+    if (image !== void 0 && typeof image !== "string") {
+      throw new AppError(httpStatus7.BAD_REQUEST, "Image must be a string URL");
+    }
+    const payload = {
+      ...name !== void 0 ? { name: name.trim() } : {},
+      ...phone !== void 0 ? { phone: phone.trim() } : {},
+      ...image !== void 0 ? { image: image.trim() } : {}
+    };
+    const result = await userServices.updateStudentProfile(requestingUser, payload);
+    return res.status(httpStatus7.OK).json({
+      success: true,
+      message: result.message,
+      data: result.data
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    console.error("Update student profile error:", error);
+    return res.status(httpStatus7.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Something went wrong while updating profile."
+    });
+  }
+};
 var getUserById2 = async (req, res) => {
   try {
     const requestingUser = req.user;
@@ -2656,12 +2971,16 @@ var getUserById2 = async (req, res) => {
 };
 var userController = {
   getUsers: getUsers2,
-  getUserById: getUserById2
+  getAdminDashboardStats: getAdminDashboardStats2,
+  getUserById: getUserById2,
+  updateStudentProfile: updateStudentProfile2
 };
 
 // src/module/users/user.route.ts
 var router7 = express7.Router();
 router7.get("/", auth_default("ADMIN" /* ADMIN */), userController.getUsers);
+router7.get("/admin-dashboard-stats", auth_default("ADMIN" /* ADMIN */), userController.getAdminDashboardStats);
+router7.put("/profile", auth_default("STUDENT" /* STUDENT */), userController.updateStudentProfile);
 router7.get("/:id", auth_default("ADMIN" /* ADMIN */, "STUDENT" /* STUDENT */), userController.getUserById);
 var userRoutes = router7;
 
