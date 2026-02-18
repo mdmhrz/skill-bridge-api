@@ -99,14 +99,14 @@ model TutorProfile {
   id           String   @id @default(uuid())
   userId       String   @unique
   bio          String?  @db.Text
-  title        String? // e.g., "Mathematics Expert", "Python Developer"
-  experience   Int? // years of experience
+  title        String?
+  experience   Int? 
   hourlyRate   Decimal  @db.Decimal(10, 2)
-  rating       Decimal? @default(0) @db.Decimal(3, 2) // Average rating (0-5)
+  rating       Decimal? @default(0) @db.Decimal(3, 2) 
   totalReviews Int      @default(0)
   isVerified   Boolean  @default(false)
-  languages    String[] // Array of languages spoken
-  education    String?  @db.Text // Educational background
+  languages    String[] 
+  education    String?  @db.Text 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

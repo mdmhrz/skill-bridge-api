@@ -11,6 +11,7 @@ if (!process.env.ADMIN_NAME || !process.env.ADMIN_EMAIL || !process.env.ADMIN_PA
 
 async function seedAdmin() {
     try {
+        console.log(process.env.DATABASE_URL, "Database URL");
         console.log("*** Admin seeding started");
 
         const adminData = {
@@ -58,17 +59,40 @@ async function seedAdmin() {
 
         console.log("*** Admin user created successfully via Better Auth");
 
-        console.log("*** Updating user to ADMIN role and verifying email...");
-        const updatedAdmin = await prisma.user.update({
-            where: { email: adminData.email },
-            data: {
-                role: UserRole.ADMIN,
-                emailVerified: true,
-            },
-        });
+        console.log("*** Waiting for user to be persisted in database...");
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        console.log("*** Admin role updated successfully:", updatedAdmin.email);
-        console.log("*** Admin seeding completed");
+        console.log("*** Updating user to ADMIN role and verifying email...");
+        let retries = 3;
+        let updatedAdmin;
+        
+        while (retries > 0) {
+            try {
+                updatedAdmin = await prisma.user.update({
+                    where: { email: adminData.email },
+                    data: {
+                        role: "ADMIN",
+                        emailVerified: true,
+                    },
+                });
+                break;
+            } catch (error: any) {
+                if (error.code === 'P2025' && retries > 1) {
+                    console.log(`*** User not found yet, retrying... (${retries - 1} attempts left)`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    retries--;
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        if (updatedAdmin) {
+            console.log("*** Admin role updated successfully:", updatedAdmin.email);
+            console.log("*** Admin seeding completed");
+        } else {
+            console.error("*** Failed to update admin user after retries");
+        }
     } catch (error) {
         console.error("!!Admin seeding failed:", error);
     } finally {
