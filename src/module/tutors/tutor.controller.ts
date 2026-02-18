@@ -340,8 +340,6 @@ const updateTutorProfile = async (
 
 
 // delete tutor profile
-
-
 const deleteTutorProfile = async (
     req: Request,
     res: Response
@@ -391,7 +389,7 @@ const deleteTutorProfile = async (
 
 
 
-
+// Featured tutors
 const featuredTutors = async (req: Request, res: Response) => {
     try {
 

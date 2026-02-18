@@ -142,7 +142,7 @@ const getAllTutors = async (options: GetTutorFilters = {}) => {
     const tutors = await prisma.tutorProfile.findMany({
         where,
         skip,
-        take: limit,
+        take: limit? limit : 9,
         orderBy: sortBy ? { [sortBy]: sortOrder } : { createdAt: "desc" },
         include: {
             user: { select: { name: true, email: true } },
