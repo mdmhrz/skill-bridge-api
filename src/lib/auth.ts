@@ -17,13 +17,22 @@ const transporter = nodemailer.createTransport({
 
 console.log("Trusted:", process.env.APP_URL)
 console.log("Trusted Prod:", process.env.PROD_APP_URL)
+
+const trustedOrigins = [
+  process.env.APP_URL,
+  process.env.PROD_APP_URL,
+  "https://skill-bridge-client-server.vercel.app",
+].filter(Boolean) as string[];
+
+const authBaseURL =
+  process.env.BETTER_AUTH_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql", // or "mysql", "postgresql", ...etc
   }),
-  trustedOrigins: [
-    "https://skill-bridge-client-server.vercel.app"
-  ],
+  trustedOrigins,
 
   // session: {
   //   cookieCache: {
@@ -31,7 +40,7 @@ export const auth = betterAuth({
   //     maxAge: 5 * 60 * 60 * 24, // 5 days 
   //   },
   // },
-  
+
   advanced: {
     useSecureCookies: true,
     sameSite: "none",
@@ -232,8 +241,8 @@ export const auth = betterAuth({
   },
 
 
-  // baseURL: process.env.BETTER_AUTH_URL,
-  
+  baseURL: authBaseURL,
+
   // Social Login Implementation
   socialProviders: {
     google: {
